@@ -3,3 +3,4 @@ structlog
 protobuf
 grpcio
 grpcio-tools
+betterproto[compiler]
