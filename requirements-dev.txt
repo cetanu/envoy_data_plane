@@ -1,0 +1,5 @@
+requests
+structlog
+protobuf
+grpcio
+grpcio-tools
