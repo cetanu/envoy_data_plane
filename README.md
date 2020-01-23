@@ -13,6 +13,14 @@ so that I have autocompletion in my IDE, and a basic form of validation.
 
 In future, this may also help with building an idiomatic GRPC control-plane in Python.
 
+## Installation
+
+This package is published to PyPI:
+
+```shell script
+python -m pip install envoy_data_plane
+```
+
 ## Example
 
 ```python
