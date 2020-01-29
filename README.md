@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/cetanu/envoy_data_plane.svg?branch=master)](https://travis-ci.org/cetanu/envoy_data_plane)
+[![Build Status](https://travis-ci.org/cetanu/envoy_data_plane.svg?branch=master)](https://travis-ci.org/cetanu/envoy_data_plane) 
+[![PyPI version](https://badge.fury.io/py/envoy-data-plane.svg)](https://badge.fury.io/py/envoy-data-plane)
 
 # envoy_data_plane
 
