@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/cetanu/envoy_data_plane.svg?branch=master)](https://travis-ci.org/cetanu/envoy_data_plane)
+
 # envoy_data_plane
 
 A conversion of envoyproxy/data-plane-api protocol buffers into Python dataclasses using betterproto
