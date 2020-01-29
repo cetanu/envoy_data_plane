@@ -207,7 +207,7 @@ with open(Path('../src/envoy_data_plane/google/protobuf.py'), 'w+') as f:
 
     
 # Found a bit of a bug, TODO: get this fixed or looked into with the betterproto folks
-with open(Path('../src/envoy_data_plane/envoy/api/v2/__init__.py') as f:
+with open(Path('../src/envoy_data_plane/envoy/api/v2/__init__.py')) as f:
     content = f.read()
 
 with open(Path('../src/envoy_data_plane/envoy/api/v2/__init__.py'), 'w+') as f:
