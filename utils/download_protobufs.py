@@ -5,6 +5,8 @@ import structlog
 from pathlib import Path
 from grpc_tools import protoc
 
+utf8 = 'utf-8'
+
 proto_include = protoc.pkg_resources.resource_filename('grpc_tools', '_proto')
 
 structlog.configure()
@@ -24,7 +26,6 @@ if not build_directory.exists():
     build_directory.mkdir()
 os.chdir(build_directory)
 
-
 protobuf_files = Path('github_files')
 
 for name, repo_url, repo_name in archives_to_unpack:
@@ -34,8 +35,8 @@ for name, repo_url, repo_name in archives_to_unpack:
 
     if not archive.exists():
         logger.msg(f'Downloading {name} protocol buffers from Github')
-        with open(archive, 'wb+') as f:
-            f.write(requests.get(repo_url).content)
+        with open(archive, 'wb+') as zf:
+            zf.write(requests.get(repo_url).content)
 
     if str(namespace) == 'protobuf' and Path('google').joinpath(namespace).exists():
         continue
@@ -49,7 +50,7 @@ for name, repo_url, repo_name in archives_to_unpack:
                 if member.endswith('.proto')
             ]
             for file in protos:
-                logger.msg(f'Extracting {file[len(extracted_name)+1:]}')
+                logger.msg(f'Extracting {file[len(extracted_name) + 1:]}')
                 zipref.extract(
                     member=file,
                     path=protobuf_files
@@ -68,7 +69,6 @@ for name, repo_url, repo_name in archives_to_unpack:
     else:
         logger.msg(f'{namespace.absolute()} exists')
 
-
 logger.msg('Removing Streaming/Services from protocol buffers')
 for root, folders, files in os.walk('.'):
     rootdir = Path(root)
@@ -81,13 +81,10 @@ for root, folders, files in os.walk('.'):
 
         protocol_buffer = rootdir.joinpath(Path(file))
 
-        with open(protocol_buffer) as f:
-            try:
-                content = f.read()
-                f.seek(0)
-                lines = f.readlines()
-            except UnicodeDecodeError:
-                continue
+        with open(protocol_buffer, encoding='utf-8') as f:
+            content = f.read()
+            f.seek(0)
+            lines = f.readlines()
 
             if '\nservice ' not in content:
                 continue
@@ -102,16 +99,15 @@ for root, folders, files in os.walk('.'):
                         end = index
                         break
 
-                marked_for_deletion = list(reversed(range(start, end+1)))
+                marked_for_deletion = list(reversed(range(start, end + 1)))
 
                 for index in marked_for_deletion:
                     del lines[index]
 
                 content = ''.join(lines)
 
-        with open(protocol_buffer, 'w+') as f:
+        with open(protocol_buffer, 'w+', encoding='utf-8') as f:
             f.write(content)
-
 
 output = Path('../src/envoy_data_plane')
 envoy = Path('./envoy')
@@ -134,7 +130,7 @@ args = [
 logger.msg('Running GRPC tools to generate python code from protocol buffers')
 protoc.main(args + proto_paths)
 
-
+logger.msg('Detecting protocol buffers that should be in a python __init__ module')
 for root, folders, files in os.walk('../src'):
     rootdir = Path(root)
 
@@ -143,22 +139,20 @@ for root, folders, files in os.walk('../src'):
         filepath = rootdir.joinpath(file)
         folder_init = rootdir.joinpath(Path(folder_name)).joinpath('__init__.py')
         if folder_name in folders:
-            with open(filepath, encoding="utf-8") as f:
+            logger.msg(f'Creating __init__ module for {folder_name}')
+            with open(filepath, encoding=utf8) as f:
                 content = f.read()
-            with open(folder_init, 'w+', encoding='utf-8') as f:
+            with open(folder_init, 'w+', encoding=utf8) as f:
                 f.write(content)
 
     for file in files:
         filepath = rootdir.joinpath(file)
 
-        with open(filepath, encoding="utf-8") as f:
-            content = f.read()
-
-        content = content.replace('from .', 'from envoy_data_plane.')
-
-        with open(filepath, 'w+', encoding='utf-8') as f:
-            f.write(content)
-
+        if str(filepath).endswith('.py'):
+            logger.msg(f'Removing relative import from {filepath}')
+            content = filepath.read_text(utf8)
+            content = content.replace('from .', 'from envoy_data_plane.')
+            filepath.write_text(content, utf8)
 
 any_proto = '''
 from dataclasses import dataclass
@@ -202,15 +196,65 @@ class NullValue(betterproto.Enum):
     NULL_VALUE = 0
 '''
 
-with open(Path('../src/envoy_data_plane/google/protobuf.py'), 'w+') as f:
-    f.write(any_proto)
+protobuf_py = Path('../src/envoy_data_plane/google/protobuf.py')
+protobuf_py.write_text(any_proto, utf8)
 
-    
-# Found a bit of a bug, TODO: get this fixed or looked into with the betterproto folks
-with open(Path('../src/envoy_data_plane/envoy/api/v2/__init__.py')) as f:
-    content = f.read()
 
-with open(Path('../src/envoy_data_plane/envoy/api/v2/__init__.py'), 'w+') as f:
-    weird_class_name = 'ClusterLoadAssignmentClusterLoadAssignmentPolicyDropOverload'
-    content = content.replace(weird_class_name, 'ClusterLoadAssignmentPolicyDropOverload')
-    f.write(content)
+# TODO: get this fixed or looked into with the betterproto folks
+# This happens, from what I can tell, when a protobuf Message has another Message defined inside it
+# This is likely to be caught by a linter, but remediation seems to be a PITA
+unresolved_refs = (
+    '../src/envoy_data_plane/envoy/api/v2/__init__.py',
+    '../src/envoy_data_plane/envoy/api/v2/core.py',
+    '../src/envoy_data_plane/envoy/api/v2.py',
+)
+replacements = [
+    (
+        'ClusterLoadAssignmentClusterLoadAssignmentPolicyDropOverload',
+        'ClusterLoadAssignmentPolicyDropOverload',
+    ),
+    (
+        'ClusterClusterLbSubsetConfigLbSubsetFallbackPolicy',
+        'ClusterLbSubsetConfigLbSubsetFallbackPolicy',
+    ),
+    (
+        'ClusterClusterLbSubsetConfigLbSubsetSelector',
+        'ClusterLbSubsetConfigLbSubsetSelector',
+    ),
+    (
+        'ClusterClusterRingHashLbConfigHashFunction',
+        'ClusterRingHashLbConfigHashFunction',
+    ),
+    (
+        'ClusterClusterCommonLbConfigZoneAwareLbConfig',
+        'ClusterCommonLbConfigZoneAwareLbConfig',
+    ),
+    (
+        'ClusterClusterCommonLbConfigLocalityWeightedLbConfig',
+        'ClusterCommonLbConfigLocalityWeightedLbConfig',
+    ),
+    (
+        'Http1ProtocolOptionsHttp1ProtocolOptionsHeaderKeyFormatProperCaseWords',
+        'Http1ProtocolOptionsHeaderKeyFormatProperCaseWords',
+    ),
+    (
+        'ClusterClusterLbSubsetConfigLbSubsetFallbackPolicy',
+        'ClusterLbSubsetConfigLbSubsetFallbackPolicy',
+    ),
+    (
+        'ClusterClusterRingHashLbConfigHashFunction',
+        'ClusterRingHashLbConfigHashFunction',
+    ),
+    (
+        'ListenerListenerConnectionBalanceConfigExactBalance',
+        'ListenerConnectionBalanceConfigExactBalance',
+    )
+]
+
+for location in unresolved_refs:
+    for weird_class, replacement in replacements:
+        logger.msg(f'Fixing dataclass {weird_class} in {location}')
+        module = Path(location)
+        content = module.read_text(utf8)
+        content = content.replace(weird_class, replacement)
+        module.write_text(content, utf8)

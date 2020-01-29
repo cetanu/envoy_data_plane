@@ -1,12 +1,14 @@
 from setuptools import setup, find_packages
 
+
 def readme():
     with open('README.md') as f:
         return f.read()
 
+
 setup(
     name='envoy_data_plane',
-    version='0.0.5',
+    version='0.0.6',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     python_requires='>=3.7.0',
