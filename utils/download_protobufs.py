@@ -204,3 +204,13 @@ class NullValue(betterproto.Enum):
 
 with open(Path('../src/envoy_data_plane/google/protobuf.py'), 'w+') as f:
     f.write(any_proto)
+
+    
+# Found a bit of a bug, TODO: get this fixed or looked into with the betterproto folks
+with open(Path('../src/envoy_data_plane/envoy/api/v2/__init__.py') as f:
+    content = f.read()
+
+with open(Path('../src/envoy_data_plane/envoy/api/v2/__init__.py', 'w+') as f:
+    weird_class_name = 'ClusterLoadAssignmentClusterLoadAssignmentPolicyDropOverload'
+    content = content.replace(weird_class_name, 'ClusterLoadAssignmentPolicyDropOverload')
+    f.write(content)
