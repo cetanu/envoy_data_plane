@@ -14,6 +14,7 @@ script: |
 deploy:
   provider: pypi
   skip_existing: true
+  skip_cleanup: true
   on:
     branch: master
   user: "__token__"
