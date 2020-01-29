@@ -6,6 +6,7 @@ betterproto[compiler]
 
 # testing
 pytest
+pytest-spec
 
 # special
 --only-binary wheel

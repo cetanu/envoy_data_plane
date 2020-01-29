@@ -30,7 +30,7 @@ def test_a_listener_can_be_created():
     )
 
 
-def test_a_routeconfiguration_can_be_created():
+def test_a_route_configuration_can_be_created():
     envoy.RouteConfiguration(
         name='TestRoutes',
         virtual_hosts=[
