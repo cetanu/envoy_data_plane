@@ -8,7 +8,7 @@ python:
 
 script: |
   pip install -r requirements-dev.txt
-  python utils/download_protobufs.py
+  python utils/download_protobufs.py || exit 1
   python setup.py install
   echo "no tests yet :("
 
