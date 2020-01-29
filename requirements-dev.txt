@@ -1,6 +1,13 @@
+# processing
 requests
 structlog
 protobuf
-grpcio
-grpcio-tools
 betterproto[compiler]
+
+# testing
+pytest
+
+# special
+--only-binary wheel
+grpcio==1.11.0
+grpcio-tools==1.11.0
