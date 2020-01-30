@@ -205,6 +205,7 @@ protobuf_py.write_text(any_proto, utf8)
 # This is likely to be caught by a linter, but remediation seems to be a PITA
 unresolved_refs = (
     '../src/envoy_data_plane/envoy/api/v2/__init__.py',
+    '../src/envoy_data_plane/envoy/api/v2/cluster.py',
     '../src/envoy_data_plane/envoy/api/v2/core.py',
     '../src/envoy_data_plane/envoy/api/v2.py',
 )
@@ -248,6 +249,14 @@ replacements = [
     (
         'ListenerListenerConnectionBalanceConfigExactBalance',
         'ListenerConnectionBalanceConfigExactBalance',
+    ),
+    (
+        'CircuitBreakersCircuitBreakersThresholdsRetryBudget',
+        'CircuitBreakersThresholdsRetryBudget'
+    ),
+    (
+        'GrpcServiceGrpcServiceGoogleGrpcGrpcServiceGrpcServiceGoogleGrpcCallCredentialsStsService',
+        'GrpcServiceGoogleGrpcCallCredentialsStsService'
     )
 ]
 
