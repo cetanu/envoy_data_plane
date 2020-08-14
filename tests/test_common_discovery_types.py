@@ -3,7 +3,7 @@ from datetime import timedelta
 
 
 def test_a_cluster_can_be_created():
-    envoy.Cluster(
+    actual = envoy.Cluster(
         name='TestCluster',
         type=envoy.ClusterDiscoveryType.STRICT_DNS,
         connect_timeout=timedelta(seconds=5),
@@ -27,9 +27,22 @@ def test_a_cluster_can_be_created():
         )
     )
 
+    expected = {
+        'name': 'TestCluster',
+        'type': 'STRICT_DNS',
+        'connectTimeout': '5.000s',
+        'dnsLookupFamily': 'V4_ONLY',
+        'perConnectionBufferLimitBytes': 16777216,
+        'commonHttpProtocolOptions': {'idleTimeout': '55.000s'},
+        'httpProtocolOptions': {'headerKeyFormat': {}},
+        'circuitBreakers': {'thresholds': [{'maxConnections': 32768}]},
+    }
+
+    assert actual.to_dict() == expected
+
 
 def test_a_listener_can_be_created():
-    envoy.Listener(
+    actual = envoy.Listener(
         name='TestListener',
         address=envoy.core.Address(
             socket_address=envoy.core.SocketAddress(
@@ -50,9 +63,26 @@ def test_a_listener_can_be_created():
         ]
     )
 
+    expected = {
+        'name': 'TestListener',
+        'address': {
+            'socketAddress': {
+                'address': '0.0.0.0',
+                'portValue': 8080
+            }
+        },
+        'filterChains': [{
+            'name': 'TestFilterChain',
+            'filters': [{
+                'name': 'envoy.http_connection_manager'}],
+        }],
+    }
+
+    assert actual.to_dict() == expected
+
 
 def test_a_route_configuration_can_be_created():
-    envoy.RouteConfiguration(
+    actual = envoy.RouteConfiguration(
         name='TestRoutes',
         virtual_hosts=[
             envoy.route.VirtualHost(
@@ -69,3 +99,16 @@ def test_a_route_configuration_can_be_created():
             )
         ]
     )
+
+    expected = {
+        'name': 'TestRoutes',
+        'virtualHosts': [{
+            'domains': ['test.com'],
+            'name': 'TestVirtualHost',
+            'routes': [{
+                'match': {'prefix': '/'},
+                'route': {'cluster': 'SomeCluster'}}]
+        }]
+    }
+
+    assert actual.to_dict() == expected

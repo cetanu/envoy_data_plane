@@ -8,7 +8,7 @@ def readme():
 
 setup(
     name='envoy_data_plane',
-    version='0.0.8',
+    version='0.1.0',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     python_requires='>=3.7.0',

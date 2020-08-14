@@ -2,6 +2,7 @@ import os
 import zipfile
 import requests
 import structlog
+from copy import deepcopy
 from pathlib import Path
 from grpc_tools import protoc
 
@@ -69,132 +70,53 @@ for name, repo_url, repo_name in archives_to_unpack:
     else:
         logger.msg(f'{namespace.absolute()} exists')
 
-logger.msg('Removing Streaming/Services from protocol buffers')
-for root, folders, files in os.walk('.'):
-    rootdir = Path(root)
-
-    for file in files:
-        if not file.endswith('.proto') \
-                or 'envoy' not in root \
-                or 'api' not in root:
-            continue
-
-        protocol_buffer = rootdir.joinpath(Path(file))
-
-        with open(protocol_buffer, encoding='utf-8') as f:
-            content = f.read()
-            f.seek(0)
-            lines = f.readlines()
-
-            if '\nservice ' not in content:
-                continue
-
-            while '\nservice ' in content:
-                start, end = 0, 0
-                for index, line in enumerate(lines):
-                    stripped_line = line.strip()
-                    if stripped_line.startswith('service ') and stripped_line.endswith('{'):
-                        start = index
-                    elif start != 0 and start < index and line == '}\n':
-                        end = index
-                        break
-
-                marked_for_deletion = list(reversed(range(start, end + 1)))
-
-                for index in marked_for_deletion:
-                    del lines[index]
-
-                content = ''.join(lines)
-
-        with open(protocol_buffer, 'w+', encoding='utf-8') as f:
-            f.write(content)
-
 output = Path('../src/envoy_data_plane')
 envoy = Path('./envoy')
 envoy_api = Path('./envoy/api')
 envoy_api_v2 = Path('./envoy/api/v2')
-
-proto_paths = [
-    str(envoy_api_v2.joinpath(Path(f'{discovery_type}.proto')))
-    for discovery_type in ['cds', 'lds', 'rds', 'eds', 'srds']
-]
-args = [
+proto_args = [
     __file__,
     f'--proto_path=.',
     f'--proto_path={envoy}',
     f'--proto_path={envoy_api}',
     f'--proto_path={envoy_api_v2}',
     f'--proto_path={proto_include}',
-    f'--python_betterproto_out={output}',
 ]
-logger.msg('Running GRPC tools to generate python code from protocol buffers')
-protoc.main(args + proto_paths)
-
-logger.msg('Detecting protocol buffers that should be in a python __init__ module')
-for root, folders, files in os.walk('../src'):
-    rootdir = Path(root)
-
-    for file in files:
-        folder_name = file.replace('.py', '')
-        filepath = rootdir.joinpath(file)
-        folder_init = rootdir.joinpath(Path(folder_name)).joinpath('__init__.py')
-        if folder_name in folders:
-            logger.msg(f'Creating __init__ module for {folder_name}')
-            with open(filepath, encoding=utf8) as f:
-                content = f.read()
-            with open(folder_init, 'w+', encoding=utf8) as f:
-                f.write(content)
-
-    for file in files:
-        filepath = rootdir.joinpath(file)
-
-        if str(filepath).endswith('.py'):
-            logger.msg(f'Removing relative import from {filepath}')
-            content = filepath.read_text(utf8)
-            content = content.replace('from .', 'from envoy_data_plane.')
-            filepath.write_text(content, utf8)
-
-any_proto = '''
-from dataclasses import dataclass
-import betterproto
 
 
-@dataclass
-class Any(betterproto.Message):
-    type_url: str = betterproto.string_field(1)
-    value: bytes = betterproto.bytes_field(2)
-    
-    
-@dataclass
-class Struct(betterproto.Message):
-    fields: betterproto.Dict[str, "Value"] = betterproto.map_field(
-        1, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
-    )
+def everything():
+    proto_files = [
+        str(file) for file in envoy.glob('**/*')
+        if file.suffix == '.proto'
+    ]
+    proto_paths = [
+        f'--proto_path={folder}'
+        for folder in Path('.').glob('**/*')
+        if folder.is_dir()
+    ]
+    args = deepcopy(proto_args)
+    args += proto_paths
+    args += [f'--python_betterproto_out={output}']
+    logger.msg('Running GRPC tools to generate python code from protocol buffers')
+    files = list()
+    for f in proto_files:
+        files.append(f)
+        if len(files) >= 100:
+            protoc.main(args + files)
+            files.clear()
+    protoc.main(args + files)
 
 
-@dataclass
-class Value(betterproto.Message):
-    null_value: "NullValue" = betterproto.enum_field(1, group="kind")
-    number_value: float = betterproto.double_field(2, group="kind")
-    string_value: str = betterproto.string_field(3, group="kind")
-    bool_value: bool = betterproto.bool_field(4, group="kind")
-    struct_value: "Struct" = betterproto.message_field(5, group="kind")
-    list_value: "ListValue" = betterproto.message_field(6, group="kind")
+def xds():
+    proto_paths = [
+        str(envoy_api_v2.joinpath(Path(f'{discovery_type}.proto')))
+        for discovery_type in ['cds', 'lds', 'rds', 'eds', 'srds']
+    ]
+    args = deepcopy(proto_args)
+    args += proto_paths
+    args += [f'--python_betterproto_out={output}']
+    protoc.main(args)
 
 
-@dataclass
-class ListValue(betterproto.Message):
-    values: betterproto.List["Value"] = betterproto.message_field(1)
-    
-
-@dataclass
-class Empty(betterproto.Message):
-    pass
-
-
-class NullValue(betterproto.Enum):
-    NULL_VALUE = 0
-'''
-
-protobuf_py = Path('../src/envoy_data_plane/google/protobuf.py')
-protobuf_py.write_text(any_proto, utf8)
+everything()
+xds()
