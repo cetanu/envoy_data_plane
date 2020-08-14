@@ -8,7 +8,7 @@ def readme():
 
 setup(
     name='envoy_data_plane',
-    version='0.1.0',
+    version='0.1.1',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     python_requires='>=3.7.0',
@@ -20,6 +20,6 @@ setup(
     long_description=readme(),
     long_description_content_type='text/markdown',
     install_requires=[
-        'betterproto'
+        'betterproto==2.0.0b1'
     ]
 )
