@@ -2,7 +2,7 @@
 requests
 structlog
 protobuf
-betterproto[compiler]==2.0.0b1
+betterproto[compiler]==2.0.0b2
 
 # testing
 pytest
