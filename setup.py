@@ -20,6 +20,6 @@ setup(
     long_description=readme(),
     long_description_content_type='text/markdown',
     install_requires=[
-        'betterproto==2.0.0b1'
+        'betterproto==2.0.0b2'
     ]
 )
