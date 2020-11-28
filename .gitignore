@@ -2,3 +2,5 @@ dist
 build
 *.egg-info
 venv
+.idea
+__pycache__
