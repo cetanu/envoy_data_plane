@@ -4,23 +4,19 @@ dist: bionic
 python:
   - "3.7"
   - "3.8"
+  - "3.9"
 
 install:
-  - pip install -r requirements-dev.txt
+  - pip install poetry
+  - poetry install --no-root
 script:
-  - python utils/download_protobufs.py
-  - python setup.py install
-  - pytest --spec
+  - poetry run python utils/download_protobufs.py
+  - poetry install
+  - poetry run pytest --spec
 
-deploy:
-  provider: pypi
-  skip_existing: true
-  skip_cleanup: true
-  on:
-    branch: master
-  user: "__token__"
-  password:
-    secure: "XscN1SpccH3NYpBjXD9VyCebkV7rm3fEhwXIoDcdgvg5AAxT7eEJ2EHh378erZwK
+env:
+  global: 
+  - secure: "XscN1SpccH3NYpBjXD9VyCebkV7rm3fEhwXIoDcdgvg5AAxT7eEJ2EHh378erZwK
              3Ec7XZ2/W6s1hHIn7qY0DvdHxlx7uRmZd5Ss8skAejYDdco6lMGo50DjDxJF2p6s
              XKXMNNBrbQHa4jhUYDZf0VDdk5NMuC1LP2/aL0zmzZQ6OEqjmREBhkTR4Bg6YOp8
              Fs/hA05LaW9xz3Nd4kowB4Y+9BhHbFEUUvr5jijFU5meod9VSSHUpvC3aiVhDr45
@@ -31,3 +27,14 @@ deploy:
              WOTJ0LuRAGvND6qMlHQvA5MEgnsiTUF9qMIXCXcFqpA9HK8rblR/7COX+Q4hHVZ9
              KQU7P7J6QD3ghnd9ehu00ExMYtJFpishKr1fdEmC4Ds2Du/PkQPNGZO/HcFiOjbY
              1WLD/3dcdhEp2kg35ZkcmPcSUv/G1x+/0FOGYRfdc9A="
+
+deploy:
+  - provider: script
+    skip_existing: true
+    skip_cleanup: true
+    script: poetry publish --username "__token__" --password $PYPI_PASS --build
+    on:
+      repo: cetanu/envoy_data_plane 
+      branch: master
+      python: '3.9'
+      tags: true

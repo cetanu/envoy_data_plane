@@ -34,7 +34,7 @@ def test_a_cluster_can_be_created():
         'dnsLookupFamily': 'V4_ONLY',
         'perConnectionBufferLimitBytes': 16777216,
         'commonHttpProtocolOptions': {'idleTimeout': '55.000s'},
-        'httpProtocolOptions': {'headerKeyFormat': {}},
+        'httpProtocolOptions': {'headerKeyFormat': {'properCaseWords': {}}},
         'circuitBreakers': {'thresholds': [{'maxConnections': 32768}]},
     }
 
