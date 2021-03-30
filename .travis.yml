@@ -2,39 +2,28 @@ language: python
 cache: pip
 dist: bionic
 python:
-  - "3.7"
-  - "3.8"
-  - "3.9"
-
+- '3.7'
+- '3.8'
+- '3.9'
 install:
-  - pip install poetry
-  - poetry install --no-root
+- pip install poetry
+- poetry install --no-root
 script:
-  - poetry run python utils/download_protobufs.py
-  - poetry install
-  - poetry run pytest --spec
-
-env:
-  global: 
-  - secure: "XscN1SpccH3NYpBjXD9VyCebkV7rm3fEhwXIoDcdgvg5AAxT7eEJ2EHh378erZwK
-             3Ec7XZ2/W6s1hHIn7qY0DvdHxlx7uRmZd5Ss8skAejYDdco6lMGo50DjDxJF2p6s
-             XKXMNNBrbQHa4jhUYDZf0VDdk5NMuC1LP2/aL0zmzZQ6OEqjmREBhkTR4Bg6YOp8
-             Fs/hA05LaW9xz3Nd4kowB4Y+9BhHbFEUUvr5jijFU5meod9VSSHUpvC3aiVhDr45
-             DY6MLCUl7Xomy5McUugOAOrczMyt+ifaWPBxN9Ao/uFpbm827BEOs6rWFivj9PQW
-             KatjXMDZEs/ptQgUjCh4kvlHwq9JBc/3ngYWz4S3ZuqU9ixVjjWKenVr/GOYZUxi
-             KN2hvH5LYFHBeUUmHEry4rvQnhl/42tgqiHvOcvlqWu/87NRbu95dZe3+q60Yk6X
-             1xoW/0G4QJWDsODd0QHDbo8FCrQYUnQ8vLTuSGq7p89tVtAODHloT2/7hviYWwlY
-             WOTJ0LuRAGvND6qMlHQvA5MEgnsiTUF9qMIXCXcFqpA9HK8rblR/7COX+Q4hHVZ9
-             KQU7P7J6QD3ghnd9ehu00ExMYtJFpishKr1fdEmC4Ds2Du/PkQPNGZO/HcFiOjbY
-             1WLD/3dcdhEp2kg35ZkcmPcSUv/G1x+/0FOGYRfdc9A="
-
+- poetry run python utils/download_protobufs.py
+- poetry install
+- poetry run pytest --spec
+before_deploy:
+- poetry build
 deploy:
-  - provider: script
-    skip_existing: true
-    skip_cleanup: true
-    script: poetry publish --username "__token__" --password $PYPI_PASS --build
-    on:
-      repo: cetanu/envoy_data_plane 
-      branch: master
-      python: '3.9'
-      tags: true
+- provider: script
+  skip_existing: true
+  skip_cleanup: true
+  script: poetry publish --username $PYPI_USERNAME --password $PYPI_PASSWORD
+  on:
+    repo: cetanu/envoy_data_plane
+    branch: master
+    python: '3.9'
+env:
+  global:
+  - secure: PhgWVU0zPcsVDEN2TIq8Q90je20W7B1yGNdCbUY5rS7FVd1KcEppGXzCi4IJQhmkQ4ke1ZH92iukF5aC4Qk9LMmqNEL2FnN6ihLGWRDMWuxGFp+hcvGL3ZOGmxquN7zXXsxpC9k7pOR2uccNZ3k/QnqlRd4a7Ay0WgZOnGHsZUTTzLqFRQBu7cjfgE1b1WWMLdBCU7R+aY2jOO0hmi6li0wJYsIEjbNN+CGPL36/piPdjPjIq6akRy/PbbnMglJaGPyj3nlu/9WLf5x6bVSckpG5dFR6nbGpEBOEDaMXwyo+8OFeY0Fdlyi+6G584qUppqoGFrsCC1T9yYHO9zN2VnzAM9rNxmFLFwgAuyhV+LQQok9j12xvGUil+685CEVizYmuwDLy+jn0CMac3bYSD1CRM79eDGde3MlMAZE1Wo5dcExSKqzRRWTGvsvCmOmA+0Q0TSxByYj0ylwbJcjzmGX+ty6L9LUob4xzz2V1VL2xQXlpK96QG7iQiR8iuNM4MT3cSI2WslZiifJPNhttk3T1kx6rzp0QulTx3HH8LgGRttP/0McUWudY6CwNNK+7sl/IyTwvfxcJP570scnNr0xp8tcvLcyTfNC2LZGl/3d7P4WysRc75bM1qrF3phpSd/En8nVxDfkMp04SIGsbSlNaqqYX0IscvQ592ab0Wh0=
+  - secure: bJpDCnvf7HFx/VEvh6r69zyTNOC1tery2DCLqcNM1uHXyiJw65Mfv1EO88e3CE6/djrEZz0nsn8qrZfiNeqBjxkbwtws92EQx1SyrHEqaG5SyGZEG0RM4zYkqmEGPce9pOElUWtyO8v/gcPzA6AmkFgeRdQHUjQaAnszx1bUPLHSlu/Lq0aGqTsYvleB9/gtxlbEOKqvimDGOYruW29RuhU588ruDrtlK2R+czCu1LMlUbvLc57lJ1v6jLcTfF7QlADmBHw9h/8keiPooJWJqrbz9wY5bGMHd7Jvcug08rBZGFNd1Qjilx8ICSOZqYcqQopj5h4uYDhxcKw0+Pe9KlA//5qMxwe3+DW7OvAXf87yDkniPHq3n0IcMKpytSn2Bwapu9MxHQWetXbBOyCeQk+Bc6rbv+7W4+PVbsHl5Ks+hh04DkIMmlHAY47nnjrC2uHH7jL/ZkTqZWKR4UqtTWkOK2XmuWZ+Oj5u0J8HQ5EAluWfenBYY7rQb14c+BVvqg6yn8iLH1/UGsi7NywFcvxHdxc3SrA/4LHCbkzwD5V0d7WjPlx7LBhGua4J5vlTd7ZAtxDJr2QWc+w+sBf0YR/4/sN+Rf1SD8CWM5DvrNWYYavKMJUjd3Af7Gp2cggZc7/b8dHMybsW1BitwmCfmWhzfMTDPwoBvIqX3r6GtCo=
