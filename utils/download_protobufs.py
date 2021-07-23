@@ -11,123 +11,108 @@ from grpc_tools import protoc
 structlog.configure()
 logger = structlog.get_logger()
 
-build_directory = Path('BUILD')
+build_directory = Path("BUILD")
 if not build_directory.exists():
-    logger.msg('Creating BUILD directory')
+    logger.msg("Creating BUILD directory")
     build_directory.mkdir()
 os.chdir(build_directory)
 
-utf8 = 'utf-8'
+utf8 = "utf-8"
 
-proto_include = protoc.pkg_resources.resource_filename('grpc_tools', '_proto')
-output = Path('../src/envoy_data_plane')
-envoy = Path('./envoy')
-envoy_api = Path('./envoy/api')
-envoy_api_v2 = Path('./envoy/api/v2')
-proto_args = [
-    __file__,
-    f'--proto_path=.',
-    f'--proto_path={envoy}',
-    f'--proto_path={envoy_api}',
-    f'--proto_path={envoy_api_v2}',
-    f'--proto_path={proto_include}',
-]
+ENVOY_VERSION = "1.16.2"
 
-Package = namedtuple('Package', ['url', 'name', 'directory'])
+proto_include = protoc.pkg_resources.resource_filename("grpc_tools", "_proto")
+envoy = Path("./envoy")
+envoy_api = Path("./envoy/api")
+envoy_api_v2 = Path("./envoy/api/v2")
+
+Package = namedtuple("Package", ["url", "name", "directory", "namespace"])
 packages = {
     Package(
-        url='https://github.com/envoyproxy/envoy/archive/refs/tags/v1.16.2.zip',
-        name='envoy',
-        directory='envoy-1.16.2/api'
+        url=f"https://github.com/envoyproxy/envoy/archive/refs/tags/v{ENVOY_VERSION}.zip",
+        name="envoy",
+        namespace="envoy",
+        directory=f"envoy-{ENVOY_VERSION}/api",
     ),
     Package(
-        url='https://github.com/googleapis/googleapis/archive/master.zip',
-        name='google',
-        directory='googleapis-master'
+        url="https://github.com/googleapis/googleapis/archive/master.zip",
+        name="google",
+        namespace="google",
+        directory="googleapis-master",
     ),
     Package(
-        url='https://github.com/cncf/udpa/archive/refs/tags/v0.0.1.zip',
-        name='udpa',
-        directory='udpa-0.0.1'
+        url="https://github.com/cncf/udpa/archive/refs/tags/v0.0.1.zip",
+        name="udpa",
+        namespace="udpa",
+        directory="udpa-0.0.1",
     ),
     Package(
-        url='https://github.com/envoyproxy/protoc-gen-validate/archive/main.zip',
-        name='validate',
-        directory='protoc-gen-validate-main'
+        url="https://github.com/envoyproxy/protoc-gen-validate/archive/main.zip",
+        name="validate",
+        namespace="validate",
+        directory="protoc-gen-validate-main",
     ),
     Package(
-        url='https://github.com/census-instrumentation/opencensus-proto/archive/refs/tags/v0.2.0.zip',
-        name='opencensus',
-        directory='opencensus-proto-0.2.0/src'
-    )
+        url="https://github.com/census-instrumentation/opencensus-proto/archive/refs/tags/v0.2.0.zip",
+        name="opencensus",
+        namespace="opencensus",
+        directory="opencensus-proto-0.2.0/src",
+    ),
+    Package(
+        url="https://github.com/prometheus/client_model/archive/refs/tags/v0.2.0.zip",
+        name="prometheus",
+        namespace=".",
+        directory="client_model-0.2.0",
+    ),
 }
 
 
 for package in packages:
-    namespace = Path(package.name)
+    name = Path(package.name)
+    namespace = Path(package.namespace)
     proto_root = Path(package.directory)
-    archive = Path(f'{package.name}.zip')
+    archive = Path(f"{package.name}.zip")
 
     if not archive.exists():
-        logger.msg(f'Downloading {package.name} protocol buffers from Github')
-        with open(archive, 'wb+') as zf:
+        logger.msg(f"Downloading {package.name} protocol buffers from Github")
+        with open(archive, "wb+") as zf:
             zf.write(requests.get(package.url).content)
 
-    if namespace.exists():
-        logger.msg(f'{namespace.absolute()} exists')
+    if name.exists():
+        logger.msg(f"{name.absolute()} exists")
     else:
-        logger.msg(f'Extracting {namespace} archive')
-        with zipfile.ZipFile(archive, 'r') as zipref:
+        logger.msg(f"Extracting {name} archive")
+        with zipfile.ZipFile(archive, "r") as zipref:
             protos = [
-                member
-                for member in zipref.namelist()
-                if member.endswith('.proto')
+                member for member in zipref.namelist() if member.endswith(".proto")
             ]
             for file in protos:
-                logger.msg(f'Extracting {file}')
-                zipref.extract(
-                    member=file,
-                    path='.'
-                )
-        shutil.copytree(
-            proto_root/namespace,
-            namespace
-        )
+                logger.msg(f"Extracting {file}")
+                zipref.extract(member=file, path=".")
+        shutil.copytree(proto_root / namespace, name)
 
 
-def everything():
-    proto_files = [
-        str(file) for file in envoy.glob('**/*')
-        if file.suffix == '.proto'
-    ]
+output = Path("../src/envoy_data_plane")
+proto_args = [
+    __file__,
+    f"--proto_path=.",
+    f"--proto_path={envoy}",
+    f"--proto_path={envoy_api}",
+    f"--proto_path={envoy_api_v2}",
+    f"--proto_path={proto_include}",
+]
+
+
+def compile_all():
+    logger.msg("Running GRPC tools to generate python code from protocol buffers")
+    proto_files = [str(file) for file in envoy.glob("**/*") if file.suffix == ".proto"]
     proto_paths = [
-        f'--proto_path={folder}'
-        for folder in Path('.').glob('**/*')
-        if folder.is_dir()
+        f"--proto_path={folder}" for folder in Path(".").glob("**/*") if folder.is_dir()
     ]
     args = deepcopy(proto_args)
     args += proto_paths
-    args += [f'--python_betterproto_out={output}']
-    logger.msg('Running GRPC tools to generate python code from protocol buffers')
-    files = list()
-    for f in proto_files:
-        files.append(f)
-        if len(files) >= 100:
-            protoc.main(args + files)
-            files.clear()
-    protoc.main(args + files)
+    args += [f"--python_betterproto_out={output}"]
+    protoc.main((*args, *proto_files))
 
 
-def xds():
-    proto_paths = [
-        str(envoy_api_v2.joinpath(Path(f'{discovery_type}.proto')))
-        for discovery_type in ['cds', 'lds', 'rds', 'eds', 'srds']
-    ]
-    args = deepcopy(proto_args)
-    args += proto_paths
-    args += [f'--python_betterproto_out={output}']
-    protoc.main(args)
-
-
-everything()
-xds()
+compile_all()
