@@ -19,7 +19,7 @@ class LocalRateLimit(betterproto.Message):
     # will be immediately closed. .. note::   In the current implementation each
     # filter and filter chain has an independent rate limit. .. note::   In the
     # current implementation the token bucket's :ref:`fill_interval
-    # <envoy_api_field_type.v3.TokenBucket.fill_interval>` must be >= 50ms to
+    # <envoy_v3_api_field_type.v3.TokenBucket.fill_interval>` must be >= 50ms to
     # avoid too aggressive   refills.
     token_bucket: "_____type_v3__.TokenBucket" = betterproto.message_field(2)
     # Runtime flag that controls whether the filter is enabled or not. If not

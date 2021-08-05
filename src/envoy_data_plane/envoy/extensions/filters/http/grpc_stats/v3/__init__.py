@@ -31,19 +31,18 @@ class FilterConfig(betterproto.Message):
     # unbounded growth in the number of stats in   Envoy, using unbounded memory
     # and potentially slowing down stats pipelines. .. attention::   If neither
     # `individual_method_stats_allowlist` nor `stats_for_all_methods` is set, the
-    # behavior will default to `stats_for_all_methods=true`. This default value
-    # is deprecated,   and in a future release, if neither field is set, it will
-    # default to   `stats_for_all_methods=false` in order to be safe by default.
-    # This behavior can be   controlled with runtime override   `envoy.deprecated
-    # _features.grpc_stats_filter_enable_stats_for_all_methods_by_default`.
+    # behavior will default to `stats_for_all_methods=false`. This default value
+    # is changed due   to the previous value being deprecated. This behavior can
+    # be changed with runtime override   `envoy.deprecated_features.grpc_stats_fi
+    # lter_enable_stats_for_all_methods_by_default`.
     stats_for_all_methods: Optional[bool] = betterproto.message_field(
         3, wraps=betterproto.TYPE_BOOL, group="per_method_stat_specifier"
     )
     # If true, the filter will gather a histogram for the request time of the
-    # upstream. It works with :ref:`stats_for_all_methods <envoy_api_field_extens
-    # ions.filters.http.grpc_stats.v3.FilterConfig.stats_for_all_methods>` and
-    # :ref:`individual_method_stats_allowlist <envoy_api_field_extensions.filters
-    # .http.grpc_stats.v3.FilterConfig.individual_method_stats_allowlist>` the
+    # upstream. It works with :ref:`stats_for_all_methods <envoy_v3_api_field_ext
+    # ensions.filters.http.grpc_stats.v3.FilterConfig.stats_for_all_methods>` and
+    # :ref:`individual_method_stats_allowlist <envoy_v3_api_field_extensions.filt
+    # ers.http.grpc_stats.v3.FilterConfig.individual_method_stats_allowlist>` the
     # same way request_message_count and response_message_count works.
     enable_upstream_stats: bool = betterproto.bool_field(4)
 

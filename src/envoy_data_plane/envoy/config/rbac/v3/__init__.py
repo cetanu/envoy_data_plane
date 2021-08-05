@@ -19,22 +19,22 @@ class RbacAction(betterproto.Enum):
 class Rbac(betterproto.Message):
     """
     Role Based Access Control (RBAC) provides service-level and method-level
-    access control for a service. RBAC policies are additive. The policies are
-    examined in order. Requests are allowed or denied based on the `action` and
-    whether a matching policy is found. For instance, if the action is ALLOW
-    and a matching policy is found the request should be allowed. RBAC can also
-    be used to make access logging decisions by communicating with access
-    loggers through dynamic metadata. When the action is LOG and at least one
-    policy matches, the `access_log_hint` value in the shared key namespace
-    'envoy.common' is set to `true` indicating the request should be logged.
-    Here is an example of RBAC configuration. It has two policies: * Service
-    account "cluster.local/ns/default/sa/admin" has full access to the service,
-    and so   does "cluster.local/ns/default/sa/superuser". * Any user can read
-    ("GET") the service at paths with prefix "/products", so long as the
-    destination port is either 80 or 443.  .. code-block:: yaml   action: ALLOW
-    policies:     "service-admin":       permissions:         - any: true
-    principals:         - authenticated:             principal_name:
-    exact: "cluster.local/ns/default/sa/admin"         - authenticated:
+    access control for a service. Requests are allowed or denied based on the
+    `action` and whether a matching policy is found. For instance, if the
+    action is ALLOW and a matching policy is found the request should be
+    allowed. RBAC can also be used to make access logging decisions by
+    communicating with access loggers through dynamic metadata. When the action
+    is LOG and at least one policy matches, the `access_log_hint` value in the
+    shared key namespace 'envoy.common' is set to `true` indicating the request
+    should be logged. Here is an example of RBAC configuration. It has two
+    policies: * Service account "cluster.local/ns/default/sa/admin" has full
+    access to the service, and so   does
+    "cluster.local/ns/default/sa/superuser". * Any user can read ("GET") the
+    service at paths with prefix "/products", so long as the   destination port
+    is either 80 or 443.  .. code-block:: yaml   action: ALLOW   policies:
+    "service-admin":       permissions:         - any: true       principals:
+    - authenticated:             principal_name:               exact:
+    "cluster.local/ns/default/sa/admin"         - authenticated:
     principal_name:               exact:
     "cluster.local/ns/default/sa/superuser"     "product-viewer":
     permissions:           - and_rules:               rules:                 -
@@ -55,7 +55,8 @@ class Rbac(betterproto.Message):
     # actions do not modify this key.
     action: "RbacAction" = betterproto.enum_field(1)
     # Maps from policy name to policy. A match occurs when at least one policy
-    # matches the request.
+    # matches the request. The policies are evaluated in lexicographic order of
+    # the policy name.
     policies: Dict[str, "Policy"] = betterproto.map_field(
         2, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
     )
@@ -130,8 +131,8 @@ class Permission(betterproto.Message):
     # Envoy is configured   as explained below.   * If the :ref:`TLS Inspector
     # <config_listener_filters_tls_inspector>`     filter is not added, and if a
     # `FilterChainMatch` is not defined for     the :ref:`server name
-    # <envoy_api_field_config.listener.v3.FilterChainMatch.server_names>`,     a
-    # TLS connection's requested SNI server name will be treated as if it
+    # <envoy_v3_api_field_config.listener.v3.FilterChainMatch.server_names>`,
+    # a TLS connection's requested SNI server name will be treated as if it
     # wasn't present.   * A :ref:`listener filter
     # <arch_overview_listener_filters>` may     overwrite a connection's
     # requested server name within Envoy. Please refer to :ref:`this FAQ entry
@@ -176,17 +177,17 @@ class Principal(betterproto.Message):
     )
     # A CIDR block that describes the downstream remote/origin address. Note:
     # This is always the physical peer even if the :ref:`remote_ip
-    # <envoy_api_field_config.rbac.v3.Principal.remote_ip>` is inferred from for
-    # example the x-forwarder-for header, proxy protocol, etc.
+    # <envoy_v3_api_field_config.rbac.v3.Principal.remote_ip>` is inferred from
+    # for example the x-forwarder-for header, proxy protocol, etc.
     direct_remote_ip: "__core_v3__.CidrRange" = betterproto.message_field(
         10, group="identifier"
     )
     # A CIDR block that describes the downstream remote/origin address. Note:
     # This may not be the physical peer and could be different from the
     # :ref:`direct_remote_ip
-    # <envoy_api_field_config.rbac.v3.Principal.direct_remote_ip>`. E.g, if the
-    # remote ip is inferred from for example the x-forwarder-for header, proxy
-    # protocol, etc.
+    # <envoy_v3_api_field_config.rbac.v3.Principal.direct_remote_ip>`. E.g, if
+    # the remote ip is inferred from for example the x-forwarder-for header,
+    # proxy protocol, etc.
     remote_ip: "__core_v3__.CidrRange" = betterproto.message_field(
         11, group="identifier"
     )

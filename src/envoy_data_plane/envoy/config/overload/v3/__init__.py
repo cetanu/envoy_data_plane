@@ -9,14 +9,19 @@ import betterproto
 from betterproto.grpc.grpclib_server import ServiceBase
 
 
+class ScaleTimersOverloadActionConfigTimerType(betterproto.Enum):
+    UNSPECIFIED = 0
+    HTTP_DOWNSTREAM_CONNECTION_IDLE = 1
+    HTTP_DOWNSTREAM_STREAM_IDLE = 2
+    TRANSPORT_SOCKET_CONNECT = 3
+
+
 @dataclass(eq=False, repr=False)
 class ResourceMonitor(betterproto.Message):
     # The name of the resource monitor to instantiate. Must match a registered
-    # resource monitor type. The built-in resource monitors are: *
-    # :ref:`envoy.resource_monitors.fixed_heap
-    # <envoy_api_msg_config.resource_monitor.fixed_heap.v2alpha.FixedHeapConfig>`
-    # * :ref:`envoy.resource_monitors.injected_resource   <envoy_api_msg_config.r
-    # esource_monitor.injected_resource.v2alpha.InjectedResourceConfig>`
+    # resource monitor type. See the :ref:`extensions listed in typed_config
+    # below <extension_category_envoy.resource_monitors>` for the default list of
+    # available resource monitor.
     name: str = betterproto.string_field(1)
     typed_config: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(
         3, group="config_type"
@@ -51,6 +56,33 @@ class Trigger(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class ScaleTimersOverloadActionConfig(betterproto.Message):
+    """
+    Typed configuration for the "envoy.overload_actions.reduce_timeouts"
+    action. See :ref:`the docs <config_overload_manager_reducing_timeouts>` for
+    an example of how to configure the action with different timeouts and
+    minimum values.
+    """
+
+    # A set of timer scaling rules to be applied.
+    timer_scale_factors: List[
+        "ScaleTimersOverloadActionConfigScaleTimer"
+    ] = betterproto.message_field(1)
+
+
+@dataclass(eq=False, repr=False)
+class ScaleTimersOverloadActionConfigScaleTimer(betterproto.Message):
+    # The type of timer this minimum applies to.
+    timer: "ScaleTimersOverloadActionConfigTimerType" = betterproto.enum_field(1)
+    # Sets the minimum duration as an absolute value.
+    min_timeout: timedelta = betterproto.message_field(2, group="overload_adjust")
+    # Sets the minimum duration as a percentage of the maximum value.
+    min_scale: "___type_v3__.Percent" = betterproto.message_field(
+        3, group="overload_adjust"
+    )
+
+
+@dataclass(eq=False, repr=False)
 class OverloadAction(betterproto.Message):
     # The name of the overload action. This is just a well-known string that
     # listeners can use for registering callbacks. Custom overload actions should
@@ -60,6 +92,8 @@ class OverloadAction(betterproto.Message):
     # state of all triggers, which can be scaling between 0 and 1 or saturated.
     # Listeners are notified when the overload action changes state.
     triggers: List["Trigger"] = betterproto.message_field(2)
+    # Configuration for the action being instantiated.
+    typed_config: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(3)
 
 
 @dataclass(eq=False, repr=False)
@@ -72,4 +106,5 @@ class OverloadManager(betterproto.Message):
     actions: List["OverloadAction"] = betterproto.message_field(3)
 
 
+from ....type import v3 as ___type_v3__
 import betterproto.lib.google.protobuf as betterproto_lib_google_protobuf

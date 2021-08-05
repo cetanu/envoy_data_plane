@@ -11,8 +11,9 @@ from betterproto.grpc.grpclib_server import ServiceBase
 @dataclass(eq=False, repr=False)
 class Decompressor(betterproto.Message):
     # A decompressor library to use for both request and response decompression.
-    # Currently only :ref:`envoy.compression.gzip.compressor<envoy_api_msg_extens
-    # ions.compression.gzip.decompressor.v3.Gzip>` is included in Envoy.
+    # Currently only :ref:`envoy.compression.gzip.compressor<envoy_v3_api_msg_ext
+    # ensions.compression.gzip.decompressor.v3.Gzip>` is included in Envoy.
+    # [#extension-category: envoy.compression.decompressor]
     decompressor_library: "_____config_core_v3__.TypedExtensionConfig" = (
         betterproto.message_field(1)
     )

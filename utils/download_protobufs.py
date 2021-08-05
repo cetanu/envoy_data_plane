@@ -19,7 +19,7 @@ os.chdir(build_directory)
 
 utf8 = "utf-8"
 
-ENVOY_VERSION = "1.16.2"
+ENVOY_VERSION = "1.19.0"
 
 proto_include = protoc.pkg_resources.resource_filename("grpc_tools", "_proto")
 envoy = Path("./envoy")
@@ -71,12 +71,13 @@ packages = {
         directory="opentelemetry-proto-0.9.0",
     ),
     Package(
-        url="https://github.com/prometheus/client_model/archive/refs/tags/v0.2.0.zip",
+        url="https://github.com/prometheus/client_model/archive/refs/heads/master.zip",
         name="prometheus",
         namespace=".",
-        directory="client_model-0.2.0",
+        directory="client_model-master",
     ),
 }
+
 
 for package in packages:
     name = Path(package.name)

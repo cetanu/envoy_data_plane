@@ -61,9 +61,8 @@ class TcpProxy(betterproto.Message):
     # set, the hash-based load balancing algorithms will select a host randomly.
     # Currently the number of hash policies is limited to 1.
     hash_policy: List["_____type_v3__.HashPolicy"] = betterproto.message_field(11)
-    # [#not-implemented-hide:] feature in progress If set, this configures
-    # tunneling, e.g. configuration options to tunnel multiple TCP payloads over
-    # a shared HTTP/2 tunnel. If this message is absent, the payload will be
+    # If set, this configures tunneling, e.g. configuration options to tunnel TCP
+    # payload over HTTP CONNECT. If this message is absent, the payload will be
     # proxied upstream as per usual.
     tunneling_config: "TcpProxyTunnelingConfig" = betterproto.message_field(12)
     # The maximum duration of a connection. The duration is defined as the period
@@ -98,8 +97,8 @@ class TcpProxyWeightedClusterClusterWeight(betterproto.Message):
     # Optional endpoint metadata match criteria used by the subset load balancer.
     # Only endpoints in the upstream cluster with metadata matching what is set
     # in this field will be considered for load balancing. Note that this will be
-    # merged with what's provided in :ref:`TcpProxy.metadata_match <envoy_api_fie
-    # ld_extensions.filters.network.tcp_proxy.v4alpha.TcpProxy.metadata_match>`,
+    # merged with what's provided in :ref:`TcpProxy.metadata_match <envoy_v3_api_
+    # field_extensions.filters.network.tcp_proxy.v3.TcpProxy.metadata_match>`,
     # with values here taking precedence. The filter name should be specified as
     # *envoy.lb*.
     metadata_match: "_____config_core_v4_alpha__.Metadata" = betterproto.message_field(
@@ -111,13 +110,23 @@ class TcpProxyWeightedClusterClusterWeight(betterproto.Message):
 class TcpProxyTunnelingConfig(betterproto.Message):
     """
     Configuration for tunneling TCP over other transports or application
-    layers. Currently, only HTTP/2 is supported. When other options exist,
-    HTTP/2 will remain the default.
+    layers. Tunneling is supported over both HTTP/1.1 and HTTP/2. Upstream
+    protocol is determined by the cluster configuration.
     """
 
     # The hostname to send in the synthesized CONNECT headers to the upstream
     # proxy.
     hostname: str = betterproto.string_field(1)
+    # Use POST method instead of CONNECT method to tunnel the TCP stream. The
+    # 'protocol: bytestream' header is also NOT set for HTTP/2 to comply with the
+    # spec. The upstream proxy is expected to convert POST payload as raw TCP.
+    use_post: bool = betterproto.bool_field(2)
+    # Additional request headers to upstream proxy. This is mainly used to
+    # trigger upstream to convert POST requests back to CONNECT requests. Neither
+    # *:-prefixed* pseudo-headers nor the Host: header can be overridden.
+    headers_to_add: List[
+        "_____config_core_v4_alpha__.HeaderValueOption"
+    ] = betterproto.message_field(3)
 
 
 from ......config.accesslog import v4alpha as _____config_accesslog_v4_alpha__

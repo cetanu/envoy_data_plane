@@ -3,7 +3,6 @@
 # plugin: python-betterproto
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import List
 
 import betterproto
 from betterproto.grpc.grpclib_server import ServiceBase
@@ -58,11 +57,11 @@ class DnsFilterConfigClientContextConfig(betterproto.Message):
     # is 1. Note that the total latency for a failed query is the number of
     # retries multiplied by the resolver_timeout.
     resolver_timeout: timedelta = betterproto.message_field(1)
-    # A list of DNS servers to which we can forward queries. If not specified,
-    # Envoy will use the ambient DNS resolvers in the system.
-    upstream_resolvers: List[
-        "_____config_core_v3__.Address"
-    ] = betterproto.message_field(2)
+    # DNS resolution configuration which includes the underlying dns resolver
+    # addresses and options.
+    dns_resolution_config: "_____config_core_v3__.DnsResolutionConfig" = (
+        betterproto.message_field(2)
+    )
     # Controls how many outstanding external lookup contexts the filter tracks.
     # The context structure allows the filter to respond to every query even if
     # the external resolution times out or is otherwise unsuccessful

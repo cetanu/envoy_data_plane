@@ -648,7 +648,8 @@ class ClusterOriginalDstLbConfig(betterproto.Message):
     # envoy-original-dst-host>` can be used to override destination address. ..
     # attention::   This header isn't sanitized by default, so enabling this
     # feature allows HTTP clients to   route traffic to arbitrary hosts and/or
-    # ports, which may have serious security   consequences.
+    # ports, which may have serious security   consequences. .. note::   If the
+    # header appears multiple times only the first value is used.
     use_http_header: bool = betterproto.bool_field(1)
 
 
@@ -956,7 +957,9 @@ class Listener(betterproto.Message):
         12, wraps=betterproto.TYPE_UINT32
     )
     # Specifies the intended direction of the traffic relative to the local
-    # Envoy.
+    # Envoy. This property is required on Windows for listeners using the
+    # original destination filter, see :ref:`Original Destination
+    # <config_listener_filters_original_dst>`.
     traffic_direction: "core.TrafficDirection" = betterproto.enum_field(16)
     # If the protocol in the listener socket address in :ref:`protocol
     # <envoy_api_field_core.SocketAddress.protocol>` is :ref:`UDP

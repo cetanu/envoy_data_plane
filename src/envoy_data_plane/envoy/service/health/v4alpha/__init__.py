@@ -98,11 +98,11 @@ class ClusterHealthCheck(betterproto.Message):
     ] = betterproto.message_field(2)
     locality_endpoints: List["LocalityEndpoints"] = betterproto.message_field(3)
     # Optional map that gets filtered by
-    # :ref:`health_checks.transport_socket_match_criteria <envoy_api_field_config
-    # .core.v4alpha.HealthCheck.transport_socket_match_criteria>` on connection
+    # :ref:`health_checks.transport_socket_match_criteria <envoy_v3_api_field_con
+    # fig.core.v3.HealthCheck.transport_socket_match_criteria>` on connection
     # when health checking. For more details, see
     # :ref:`config.cluster.v3.Cluster.transport_socket_matches
-    # <envoy_api_field_config.cluster.v4alpha.Cluster.transport_socket_matches>`.
+    # <envoy_v3_api_field_config.cluster.v3.Cluster.transport_socket_matches>`.
     transport_socket_matches: List[
         "___config_cluster_v4_alpha__.ClusterTransportSocketMatch"
     ] = betterproto.message_field(4)

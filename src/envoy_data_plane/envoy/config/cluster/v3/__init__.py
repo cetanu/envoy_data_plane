@@ -62,8 +62,9 @@ class ClusterRingHashLbConfigHashFunction(betterproto.Enum):
 
 @dataclass(eq=False, repr=False)
 class Filter(betterproto.Message):
-    # The name of the filter to instantiate. The name must match a
-    # :ref:`supported filter <config_network_filters>`.
+    # The name of the filter to instantiate. The name must match a supported
+    # upstream filter. Note that Envoy's :ref:`downstream network filters
+    # <config_network_filters>` are not valid upstream filters.
     name: str = betterproto.string_field(1)
     # Filter specific configuration which depends on the filter being
     # instantiated. See the supported filters for further documentation.
@@ -74,7 +75,7 @@ class Filter(betterproto.Message):
 class OutlierDetection(betterproto.Message):
     """
     See the :ref:`architecture overview <arch_overview_outlier_detection>` for
-    more information on outlier detection. [#next-free-field: 21]
+    more information on outlier detection. [#next-free-field: 22]
     """
 
     # The number of consecutive 5xx responses or local origin errors that are
@@ -88,8 +89,9 @@ class OutlierDetection(betterproto.Message):
     # 10000ms or 10s.
     interval: timedelta = betterproto.message_field(2)
     # The base time that a host is ejected for. The real time is equal to the
-    # base time multiplied by the number of times the host has been ejected.
-    # Defaults to 30000ms or 30s.
+    # base time multiplied by the number of times the host has been ejected and
+    # is capped by :ref:`max_ejection_time<envoy_v3_api_field_config.cluster.v3.O
+    # utlierDetection.max_ejection_time>`. Defaults to 30000ms or 30s.
     base_ejection_time: timedelta = betterproto.message_field(3)
     # The maximum % of an upstream cluster that can be ejected due to outlier
     # detection. Defaults to 10% but will eject at least one host regardless of
@@ -146,17 +148,17 @@ class OutlierDetection(betterproto.Message):
     )
     # Determines whether to distinguish local origin failures from external
     # errors. If set to true the following configuration parameters are taken
-    # into account: :ref:`consecutive_local_origin_failure<envoy_api_field_config
-    # .cluster.v3.OutlierDetection.consecutive_local_origin_failure>`, :ref:`enfo
-    # rcing_consecutive_local_origin_failure<envoy_api_field_config.cluster.v3.Ou
-    # tlierDetection.enforcing_consecutive_local_origin_failure>` and :ref:`enfor
-    # cing_local_origin_success_rate<envoy_api_field_config.cluster.v3.OutlierDet
-    # ection.enforcing_local_origin_success_rate>`. Defaults to false.
+    # into account: :ref:`consecutive_local_origin_failure<envoy_v3_api_field_con
+    # fig.cluster.v3.OutlierDetection.consecutive_local_origin_failure>`, :ref:`e
+    # nforcing_consecutive_local_origin_failure<envoy_v3_api_field_config.cluster
+    # .v3.OutlierDetection.enforcing_consecutive_local_origin_failure>` and :ref:
+    # `enforcing_local_origin_success_rate<envoy_v3_api_field_config.cluster.v3.O
+    # utlierDetection.enforcing_local_origin_success_rate>`. Defaults to false.
     split_external_local_origin_errors: bool = betterproto.bool_field(12)
     # The number of consecutive locally originated failures before ejection
     # occurs. Defaults to 5. Parameter takes effect only when :ref:`split_externa
-    # l_local_origin_errors<envoy_api_field_config.cluster.v3.OutlierDetection.sp
-    # lit_external_local_origin_errors>` is set to true.
+    # l_local_origin_errors<envoy_v3_api_field_config.cluster.v3.OutlierDetection
+    # .split_external_local_origin_errors>` is set to true.
     consecutive_local_origin_failure: Optional[int] = betterproto.message_field(
         13, wraps=betterproto.TYPE_UINT32
     )
@@ -164,8 +166,8 @@ class OutlierDetection(betterproto.Message):
     # detected through consecutive locally originated failures. This setting can
     # be used to disable ejection or to ramp it up slowly. Defaults to 100.
     # Parameter takes effect only when :ref:`split_external_local_origin_errors<e
-    # nvoy_api_field_config.cluster.v3.OutlierDetection.split_external_local_orig
-    # in_errors>` is set to true.
+    # nvoy_v3_api_field_config.cluster.v3.OutlierDetection.split_external_local_o
+    # rigin_errors>` is set to true.
     enforcing_consecutive_local_origin_failure: Optional[
         int
     ] = betterproto.message_field(14, wraps=betterproto.TYPE_UINT32)
@@ -173,8 +175,8 @@ class OutlierDetection(betterproto.Message):
     # detected through success rate statistics for locally originated errors.
     # This setting can be used to disable ejection or to ramp it up slowly.
     # Defaults to 100. Parameter takes effect only when :ref:`split_external_loca
-    # l_origin_errors<envoy_api_field_config.cluster.v3.OutlierDetection.split_ex
-    # ternal_local_origin_errors>` is set to true.
+    # l_origin_errors<envoy_v3_api_field_config.cluster.v3.OutlierDetection.split
+    # _external_local_origin_errors>` is set to true.
     enforcing_local_origin_success_rate: Optional[int] = betterproto.message_field(
         15, wraps=betterproto.TYPE_UINT32
     )
@@ -213,6 +215,12 @@ class OutlierDetection(betterproto.Message):
     failure_percentage_request_volume: Optional[int] = betterproto.message_field(
         20, wraps=betterproto.TYPE_UINT32
     )
+    # The maximum time that a host is ejected for. See :ref:`base_ejection_time<e
+    # nvoy_v3_api_field_config.cluster.v3.OutlierDetection.base_ejection_time>`
+    # for more information. If not specified, the default value (300000ms or
+    # 300s) or :ref:`base_ejection_time<envoy_v3_api_field_config.cluster.v3.Outl
+    # ierDetection.base_ejection_time>` value is applied, whatever is larger.
+    max_ejection_time: timedelta = betterproto.message_field(21)
 
 
 @dataclass(eq=False, repr=False)
@@ -222,12 +230,12 @@ class CircuitBreakers(betterproto.Message):
     specified individually for each defined priority.
     """
 
-    # If multiple :ref:`Thresholds<envoy_api_msg_config.cluster.v3.CircuitBreaker
-    # s.Thresholds>` are defined with the same
-    # :ref:`RoutingPriority<envoy_api_enum_config.core.v3.RoutingPriority>`, the
-    # first one in the list is used. If no Thresholds is defined for a given
-    # :ref:`RoutingPriority<envoy_api_enum_config.core.v3.RoutingPriority>`, the
-    # default values are used.
+    # If multiple :ref:`Thresholds<envoy_v3_api_msg_config.cluster.v3.CircuitBrea
+    # kers.Thresholds>` are defined with the same
+    # :ref:`RoutingPriority<envoy_v3_api_enum_config.core.v3.RoutingPriority>`,
+    # the first one in the list is used. If no Thresholds is defined for a given
+    # :ref:`RoutingPriority<envoy_v3_api_enum_config.core.v3.RoutingPriority>`,
+    # the default values are used.
     thresholds: List["CircuitBreakersThresholds"] = betterproto.message_field(1)
 
 
@@ -235,11 +243,12 @@ class CircuitBreakers(betterproto.Message):
 class CircuitBreakersThresholds(betterproto.Message):
     """
     A Thresholds defines CircuitBreaker settings for a
-    :ref:`RoutingPriority<envoy_api_enum_config.core.v3.RoutingPriority>`.
+    :ref:`RoutingPriority<envoy_v3_api_enum_config.core.v3.RoutingPriority>`.
     [#next-free-field: 9]
     """
 
-    # The :ref:`RoutingPriority<envoy_api_enum_config.core.v3.RoutingPriority>`
+    # The
+    # :ref:`RoutingPriority<envoy_v3_api_enum_config.core.v3.RoutingPriority>`
     # the specified CircuitBreaker settings apply to.
     priority: "__core_v3__.RoutingPriority" = betterproto.enum_field(1)
     # The maximum number of connections that Envoy will make to the upstream
@@ -305,20 +314,21 @@ class ClusterCollection(betterproto.Message):
     [#not-implemented-hide:]
     """
 
-    entries: "____udpa_core_v1__.CollectionEntry" = betterproto.message_field(1)
+    entries: "____xds_core_v3__.CollectionEntry" = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
 class Cluster(betterproto.Message):
-    """Configuration for a single upstream cluster. [#next-free-field: 53]"""
+    """Configuration for a single upstream cluster. [#next-free-field: 55]"""
 
     # Configuration to use different transport sockets for different endpoints.
     # The entry of *envoy.transport_socket_match* in the
     # :ref:`LbEndpoint.Metadata
-    # <envoy_api_field_config.endpoint.v3.LbEndpoint.metadata>` is used to match
-    # against the transport sockets as they appear in the list. The first
-    # :ref:`match <envoy_api_msg_config.cluster.v3.Cluster.TransportSocketMatch>`
-    # is used. For example, with the following match .. code-block:: yaml
+    # <envoy_v3_api_field_config.endpoint.v3.LbEndpoint.metadata>` is used to
+    # match against the transport sockets as they appear in the list. The first
+    # :ref:`match
+    # <envoy_v3_api_msg_config.cluster.v3.Cluster.TransportSocketMatch>` is used.
+    # For example, with the following match .. code-block:: yaml
     # transport_socket_matches:  - name: "enableMTLS"    match:      acceptMTLS:
     # true    transport_socket:      name: envoy.transport_sockets.tls
     # config: { ... } # tls socket configuration  - name: "defaultToPlaintext"
@@ -327,11 +337,11 @@ class Cluster(betterproto.Message):
     # metadata value under *envoy.transport_socket_match* having
     # "acceptMTLS"/"true" key/value pair use the "enableMTLS" socket
     # configuration. If a :ref:`socket match
-    # <envoy_api_msg_config.cluster.v3.Cluster.TransportSocketMatch>` with empty
-    # match criteria is provided, that always match any endpoint. For example,
-    # the "defaultToPlaintext" socket match in case above. If an endpoint
-    # metadata's value under *envoy.transport_socket_match* does not match any
-    # *TransportSocketMatch*, socket configuration fallbacks to use the
+    # <envoy_v3_api_msg_config.cluster.v3.Cluster.TransportSocketMatch>` with
+    # empty match criteria is provided, that always match any endpoint. For
+    # example, the "defaultToPlaintext" socket match in case above. If an
+    # endpoint metadata's value under *envoy.transport_socket_match* does not
+    # match any *TransportSocketMatch*, socket configuration fallbacks to use the
     # *tls_context* or *transport_socket* specified in this cluster. This field
     # allows gradual and flexible transport socket configuration changes. The
     # metadata of endpoints in EDS can indicate transport socket capabilities.
@@ -345,8 +355,8 @@ class Cluster(betterproto.Message):
     # *transport_socket_match* set, and still send plain text traffic to the same
     # cluster. This field can be used to specify custom transport socket
     # configurations for health checks by adding matching key/value pairs in a
-    # health check's :ref:`transport socket match criteria <envoy_api_field_confi
-    # g.core.v3.HealthCheck.transport_socket_match_criteria>` field.
+    # health check's :ref:`transport socket match criteria <envoy_v3_api_field_co
+    # nfig.core.v3.HealthCheck.transport_socket_match_criteria>` field.
     # [#comment:TODO(incfly): add a detailed architecture doc on intended usage.]
     transport_socket_matches: List[
         "ClusterTransportSocketMatch"
@@ -354,14 +364,21 @@ class Cluster(betterproto.Message):
     # Supplies the name of the cluster which must be unique across all clusters.
     # The cluster name is used when emitting :ref:`statistics
     # <config_cluster_manager_cluster_stats>` if :ref:`alt_stat_name
-    # <envoy_api_field_config.cluster.v3.Cluster.alt_stat_name>` is not provided.
-    # Any ``:`` in the cluster name will be converted to ``_`` when emitting
-    # statistics.
+    # <envoy_v3_api_field_config.cluster.v3.Cluster.alt_stat_name>` is not
+    # provided. Any ``:`` in the cluster name will be converted to ``_`` when
+    # emitting statistics.
     name: str = betterproto.string_field(1)
-    # An optional alternative to the cluster name to be used while emitting
-    # stats. Any ``:`` in the name will be converted to ``_`` when emitting
-    # statistics. This should not be confused with :ref:`Router Filter Header
-    # <config_http_filters_router_x-envoy-upstream-alt-stat-name>`.
+    # An optional alternative to the cluster name to be used for observability.
+    # This name is used emitting stats for the cluster and access logging the
+    # cluster name. This will appear as additional information in configuration
+    # dumps of a cluster's current status as :ref:`observability_name
+    # <envoy_v3_api_field_admin.v3.ClusterStatus.observability_name>` and as an
+    # additional tag "upstream_cluster.name" while tracing. Note: access logging
+    # using this field is presently enabled with runtime feature
+    # `envoy.reloadable_features.use_observable_cluster_name`. Any ``:`` in the
+    # name will be converted to ``_`` when emitting statistics. This should not
+    # be confused with :ref:`Router Filter Header <config_http_filters_router_x-
+    # envoy-upstream-alt-stat-name>`.
     alt_stat_name: str = betterproto.string_field(28)
     # The :ref:`service discovery type <arch_overview_service_discovery_types>`
     # to use for resolving the cluster.
@@ -374,7 +391,8 @@ class Cluster(betterproto.Message):
     )
     # Configuration to use for EDS updates for the Cluster.
     eds_cluster_config: "ClusterEdsClusterConfig" = betterproto.message_field(3)
-    # The timeout for new network connections to hosts in the cluster.
+    # The timeout for new network connections to hosts in the cluster. If not
+    # set, a default value of 5s will be used.
     connect_timeout: timedelta = betterproto.message_field(4)
     # Soft limit on size of the cluster’s connections read and write buffers. If
     # unspecified, an implementation defined default is applied (1MiB).
@@ -383,17 +401,17 @@ class Cluster(betterproto.Message):
     )
     # The :ref:`load balancer type <arch_overview_load_balancing_types>` to use
     # when picking a host in the cluster. [#comment:TODO: Remove enum constraint
-    # :ref:`LOAD_BALANCING_POLICY_CONFIG<envoy_api_enum_value_config.cluster.v3.C
-    # luster.LbPolicy.LOAD_BALANCING_POLICY_CONFIG>` when implemented.]
+    # :ref:`LOAD_BALANCING_POLICY_CONFIG<envoy_v3_api_enum_value_config.cluster.v
+    # 3.Cluster.LbPolicy.LOAD_BALANCING_POLICY_CONFIG>` when implemented.]
     lb_policy: "ClusterLbPolicy" = betterproto.enum_field(6)
-    # Setting this is required for specifying members of :ref:`STATIC<envoy_api_e
-    # num_value_config.cluster.v3.Cluster.DiscoveryType.STATIC>`, :ref:`STRICT_DN
-    # S<envoy_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.STRICT_DNS>`
-    # or :ref:`LOGICAL_DNS<envoy_api_enum_value_config.cluster.v3.Cluster.Discove
-    # ryType.LOGICAL_DNS>` clusters. This field supersedes the *hosts* field in
-    # the v2 API. .. attention::   Setting this allows non-EDS cluster types to
-    # contain embedded EDS equivalent   :ref:`endpoint
-    # assignments<envoy_api_msg_config.endpoint.v3.ClusterLoadAssignment>`.
+    # Setting this is required for specifying members of :ref:`STATIC<envoy_v3_ap
+    # i_enum_value_config.cluster.v3.Cluster.DiscoveryType.STATIC>`, :ref:`STRICT
+    # _DNS<envoy_v3_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.STRICT
+    # _DNS>` or :ref:`LOGICAL_DNS<envoy_v3_api_enum_value_config.cluster.v3.Clust
+    # er.DiscoveryType.LOGICAL_DNS>` clusters. This field supersedes the *hosts*
+    # field in the v2 API. .. attention::   Setting this allows non-EDS cluster
+    # types to contain embedded EDS equivalent   :ref:`endpoint
+    # assignments<envoy_v3_api_msg_config.endpoint.v3.ClusterLoadAssignment>`.
     load_assignment: "__endpoint_v3__.ClusterLoadAssignment" = (
         betterproto.message_field(33)
     )
@@ -413,16 +431,42 @@ class Cluster(betterproto.Message):
     # cluster.
     circuit_breakers: "CircuitBreakers" = betterproto.message_field(10)
     # HTTP protocol options that are applied only to upstream HTTP connections.
-    # These options apply to all HTTP versions.
+    # These options apply to all HTTP versions. This has been deprecated in favor
+    # of :ref:`upstream_http_protocol_options <envoy_v3_api_field_extensions.upst
+    # reams.http.v3.HttpProtocolOptions.upstream_http_protocol_options>` in the
+    # :ref:`http_protocol_options
+    # <envoy_v3_api_msg_extensions.upstreams.http.v3.HttpProtocolOptions>`
+    # message. upstream_http_protocol_options can be set via the cluster's :ref:`
+    # extension_protocol_options<envoy_v3_api_field_config.cluster.v3.Cluster.typ
+    # ed_extension_protocol_options>`. See :ref:`upstream_http_protocol_options <
+    # envoy_v3_api_field_extensions.upstreams.http.v3.HttpProtocolOptions.upstrea
+    # m_http_protocol_options>` for example usage.
     upstream_http_protocol_options: "__core_v3__.UpstreamHttpProtocolOptions" = (
         betterproto.message_field(46)
     )
     # Additional options when handling HTTP requests upstream. These options will
-    # be applicable to both HTTP1 and HTTP2 requests.
+    # be applicable to both HTTP1 and HTTP2 requests. This has been deprecated in
+    # favor of :ref:`common_http_protocol_options <envoy_v3_api_field_extensions.
+    # upstreams.http.v3.HttpProtocolOptions.common_http_protocol_options>` in the
+    # :ref:`http_protocol_options
+    # <envoy_v3_api_msg_extensions.upstreams.http.v3.HttpProtocolOptions>`
+    # message. common_http_protocol_options can be set via the cluster's :ref:`ex
+    # tension_protocol_options<envoy_v3_api_field_config.cluster.v3.Cluster.typed
+    # _extension_protocol_options>`. See :ref:`upstream_http_protocol_options <en
+    # voy_v3_api_field_extensions.upstreams.http.v3.HttpProtocolOptions.upstream_
+    # http_protocol_options>` for example usage.
     common_http_protocol_options: "__core_v3__.HttpProtocolOptions" = (
         betterproto.message_field(29)
     )
-    # Additional options when handling HTTP1 requests.
+    # Additional options when handling HTTP1 requests. This has been deprecated
+    # in favor of http_protocol_options fields in the in the
+    # :ref:`http_protocol_options
+    # <envoy_v3_api_msg_extensions.upstreams.http.v3.HttpProtocolOptions>`
+    # message. http_protocol_options can be set via the cluster's :ref:`extension
+    # _protocol_options<envoy_v3_api_field_config.cluster.v3.Cluster.typed_extens
+    # ion_protocol_options>`. See :ref:`upstream_http_protocol_options <envoy_v3_
+    # api_field_extensions.upstreams.http.v3.HttpProtocolOptions.upstream_http_pr
+    # otocol_options>` for example usage.
     http_protocol_options: "__core_v3__.Http1ProtocolOptions" = (
         betterproto.message_field(13)
     )
@@ -431,73 +475,100 @@ class Cluster(betterproto.Message):
     # HTTP connection pool connections. Currently, Envoy only supports prior
     # knowledge for upstream connections. Even if TLS is used with ALPN,
     # `http2_protocol_options` must be specified. As an aside this allows HTTP/2
-    # connections to happen over plain text.
+    # connections to happen over plain text. This has been deprecated in favor of
+    # http2_protocol_options fields in the in the :ref:`http_protocol_options
+    # <envoy_v3_api_msg_extensions.upstreams.http.v3.HttpProtocolOptions>`
+    # message. http2_protocol_options can be set via the cluster's :ref:`extensio
+    # n_protocol_options<envoy_v3_api_field_config.cluster.v3.Cluster.typed_exten
+    # sion_protocol_options>`. See :ref:`upstream_http_protocol_options <envoy_v3
+    # _api_field_extensions.upstreams.http.v3.HttpProtocolOptions.upstream_http_p
+    # rotocol_options>` for example usage.
     http2_protocol_options: "__core_v3__.Http2ProtocolOptions" = (
         betterproto.message_field(14)
     )
     # The extension_protocol_options field is used to provide extension-specific
     # protocol options for upstream connections. The key should match the
     # extension filter name, such as "envoy.filters.network.thrift_proxy". See
-    # the extension's documentation for details on specific options.
+    # the extension's documentation for details on specific options. [#next-
+    # major-version: make this a list of typed extensions.]
     typed_extension_protocol_options: Dict[
         str, "betterproto_lib_google_protobuf.Any"
     ] = betterproto.map_field(36, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE)
     # If the DNS refresh rate is specified and the cluster type is either :ref:`S
-    # TRICT_DNS<envoy_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.STRI
-    # CT_DNS>`, or :ref:`LOGICAL_DNS<envoy_api_enum_value_config.cluster.v3.Clust
-    # er.DiscoveryType.LOGICAL_DNS>`, this value is used as the cluster’s DNS
-    # refresh rate. The value configured must be at least 1ms. If this setting is
-    # not specified, the value defaults to 5000ms. For cluster types other than :
-    # ref:`STRICT_DNS<envoy_api_enum_value_config.cluster.v3.Cluster.DiscoveryTyp
-    # e.STRICT_DNS>` and :ref:`LOGICAL_DNS<envoy_api_enum_value_config.cluster.v3
-    # .Cluster.DiscoveryType.LOGICAL_DNS>` this setting is ignored.
-    dns_refresh_rate: timedelta = betterproto.message_field(16)
-    # If the DNS failure refresh rate is specified and the cluster type is either
-    # :ref:`STRICT_DNS<envoy_api_enum_value_config.cluster.v3.Cluster.DiscoveryTy
-    # pe.STRICT_DNS>`, or :ref:`LOGICAL_DNS<envoy_api_enum_value_config.cluster.v
-    # 3.Cluster.DiscoveryType.LOGICAL_DNS>`, this is used as the cluster’s DNS
-    # refresh rate when requests are failing. If this setting is not specified,
-    # the failure refresh rate defaults to the DNS refresh rate. For cluster
-    # types other than :ref:`STRICT_DNS<envoy_api_enum_value_config.cluster.v3.Cl
-    # uster.DiscoveryType.STRICT_DNS>` and :ref:`LOGICAL_DNS<envoy_api_enum_value
+    # TRICT_DNS<envoy_v3_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.S
+    # TRICT_DNS>`, or :ref:`LOGICAL_DNS<envoy_v3_api_enum_value_config.cluster.v3
+    # .Cluster.DiscoveryType.LOGICAL_DNS>`, this value is used as the cluster’s
+    # DNS refresh rate. The value configured must be at least 1ms. If this
+    # setting is not specified, the value defaults to 5000ms. For cluster types
+    # other than :ref:`STRICT_DNS<envoy_v3_api_enum_value_config.cluster.v3.Clust
+    # er.DiscoveryType.STRICT_DNS>` and :ref:`LOGICAL_DNS<envoy_v3_api_enum_value
     # _config.cluster.v3.Cluster.DiscoveryType.LOGICAL_DNS>` this setting is
     # ignored.
+    dns_refresh_rate: timedelta = betterproto.message_field(16)
+    # If the DNS failure refresh rate is specified and the cluster type is either
+    # :ref:`STRICT_DNS<envoy_v3_api_enum_value_config.cluster.v3.Cluster.Discover
+    # yType.STRICT_DNS>`, or :ref:`LOGICAL_DNS<envoy_v3_api_enum_value_config.clu
+    # ster.v3.Cluster.DiscoveryType.LOGICAL_DNS>`, this is used as the cluster’s
+    # DNS refresh rate when requests are failing. If this setting is not
+    # specified, the failure refresh rate defaults to the DNS refresh rate. For
+    # cluster types other than :ref:`STRICT_DNS<envoy_v3_api_enum_value_config.cl
+    # uster.v3.Cluster.DiscoveryType.STRICT_DNS>` and :ref:`LOGICAL_DNS<envoy_v3_
+    # api_enum_value_config.cluster.v3.Cluster.DiscoveryType.LOGICAL_DNS>` this
+    # setting is ignored.
     dns_failure_refresh_rate: "ClusterRefreshRate" = betterproto.message_field(44)
     # Optional configuration for setting cluster's DNS refresh rate. If the value
     # is set to true, cluster's DNS refresh rate will be set to resource record's
     # TTL which comes from DNS resolution.
     respect_dns_ttl: bool = betterproto.bool_field(39)
     # The DNS IP address resolution policy. If this setting is not specified, the
-    # value defaults to :ref:`AUTO<envoy_api_enum_value_config.cluster.v3.Cluster
-    # .DnsLookupFamily.AUTO>`.
+    # value defaults to :ref:`AUTO<envoy_v3_api_enum_value_config.cluster.v3.Clus
+    # ter.DnsLookupFamily.AUTO>`.
     dns_lookup_family: "ClusterDnsLookupFamily" = betterproto.enum_field(17)
     # If DNS resolvers are specified and the cluster type is either :ref:`STRICT_
-    # DNS<envoy_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.STRICT_DNS
-    # >`, or :ref:`LOGICAL_DNS<envoy_api_enum_value_config.cluster.v3.Cluster.Dis
-    # coveryType.LOGICAL_DNS>`, this value is used to specify the cluster’s dns
-    # resolvers. If this setting is not specified, the value defaults to the
+    # DNS<envoy_v3_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.STRICT_
+    # DNS>`, or :ref:`LOGICAL_DNS<envoy_v3_api_enum_value_config.cluster.v3.Clust
+    # er.DiscoveryType.LOGICAL_DNS>`, this value is used to specify the cluster’s
+    # dns resolvers. If this setting is not specified, the value defaults to the
     # default resolver, which uses /etc/resolv.conf for configuration. For
-    # cluster types other than :ref:`STRICT_DNS<envoy_api_enum_value_config.clust
-    # er.v3.Cluster.DiscoveryType.STRICT_DNS>` and :ref:`LOGICAL_DNS<envoy_api_en
-    # um_value_config.cluster.v3.Cluster.DiscoveryType.LOGICAL_DNS>` this setting
-    # is ignored. Setting this value causes failure if the
+    # cluster types other than :ref:`STRICT_DNS<envoy_v3_api_enum_value_config.cl
+    # uster.v3.Cluster.DiscoveryType.STRICT_DNS>` and :ref:`LOGICAL_DNS<envoy_v3_
+    # api_enum_value_config.cluster.v3.Cluster.DiscoveryType.LOGICAL_DNS>` this
+    # setting is ignored. Setting this value causes failure if the
     # ``envoy.restart_features.use_apple_api_for_dns_lookups`` runtime value is
     # true during server startup. Apple's API only allows overriding DNS
-    # resolvers via system settings.
+    # resolvers via system settings. This field is deprecated in favor of
+    # *dns_resolution_config* which aggregates all of the DNS resolver
+    # configuration in a single message.
     dns_resolvers: List["__core_v3__.Address"] = betterproto.message_field(18)
-    # [#next-major-version: Reconcile DNS options in a single message.] Always
-    # use TCP queries instead of UDP queries for DNS lookups. Setting this value
-    # causes failure if the
+    # Always use TCP queries instead of UDP queries for DNS lookups. Setting this
+    # value causes failure if the
     # ``envoy.restart_features.use_apple_api_for_dns_lookups`` runtime value is
     # true during server startup. Apple' API only uses UDP for DNS resolution.
+    # This field is deprecated in favor of *dns_resolution_config* which
+    # aggregates all of the DNS resolver configuration in a single message.
     use_tcp_for_dns_lookups: bool = betterproto.bool_field(45)
+    # DNS resolution configuration which includes the underlying dns resolver
+    # addresses and options.
+    dns_resolution_config: "__core_v3__.DnsResolutionConfig" = (
+        betterproto.message_field(53)
+    )
+    # Optional configuration for having cluster readiness block on warm-up.
+    # Currently, only applicable for :ref:`STRICT_DNS<envoy_v3_api_enum_value_con
+    # fig.cluster.v3.Cluster.DiscoveryType.STRICT_DNS>`, or :ref:`LOGICAL_DNS<env
+    # oy_v3_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.LOGICAL_DNS>`.
+    # If true, cluster readiness blocks on warm-up. If false, the cluster will
+    # complete initialization whether or not warm-up has completed. Defaults to
+    # true.
+    wait_for_warm_on_init: Optional[bool] = betterproto.message_field(
+        54, wraps=betterproto.TYPE_BOOL
+    )
     # If specified, outlier detection will be enabled for this upstream cluster.
     # Each of the configuration values can be overridden via :ref:`runtime values
     # <config_cluster_manager_cluster_runtime_outlier_detection>`.
     outlier_detection: "OutlierDetection" = betterproto.message_field(19)
     # The interval for removing stale hosts from a cluster type :ref:`ORIGINAL_DS
-    # T<envoy_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.ORIGINAL_DST
-    # >`. Hosts are considered stale if they have not been used as upstream
+    # T<envoy_v3_api_enum_value_config.cluster.v3.Cluster.DiscoveryType.ORIGINAL_
+    # DST>`. Hosts are considered stale if they have not been used as upstream
     # destinations during this interval. New hosts are added to original
     # destination clusters on demand as new connections are redirected to Envoy,
     # causing the number of hosts in the cluster to grow over time. Hosts that
@@ -505,8 +576,8 @@ class Cluster(betterproto.Message):
     # cluster, which allows connections to them remain open, saving the latency
     # that would otherwise be spent on opening new connections. If this setting
     # is not specified, the value defaults to 5000ms. For cluster types other
-    # than :ref:`ORIGINAL_DST<envoy_api_enum_value_config.cluster.v3.Cluster.Disc
-    # overyType.ORIGINAL_DST>` this setting is ignored.
+    # than :ref:`ORIGINAL_DST<envoy_v3_api_enum_value_config.cluster.v3.Cluster.D
+    # iscoveryType.ORIGINAL_DST>` this setting is ignored.
     cleanup_interval: timedelta = betterproto.message_field(20)
     # Optional configuration used to bind newly established upstream connections.
     # This overrides any bind_config specified in the bootstrap proto. If the
@@ -533,11 +604,11 @@ class Cluster(betterproto.Message):
     # Common configuration for all load balancer implementations.
     common_lb_config: "ClusterCommonLbConfig" = betterproto.message_field(27)
     # Optional custom transport socket implementation to use for upstream
-    # connections. To setup TLS, set a transport socket with name `tls` and
-    # :ref:`UpstreamTlsContexts
-    # <envoy_api_msg_extensions.transport_sockets.tls.v3.UpstreamTlsContext>` in
-    # the `typed_config`. If no transport socket configuration is specified, new
-    # connections will be set up with plaintext.
+    # connections. To setup TLS, set a transport socket with name
+    # `envoy.transport_sockets.tls` and :ref:`UpstreamTlsContexts
+    # <envoy_v3_api_msg_extensions.transport_sockets.tls.v3.UpstreamTlsContext>`
+    # in the `typed_config`. If no transport socket configuration is specified,
+    # new connections will be set up with plaintext.
     transport_socket: "__core_v3__.TransportSocket" = betterproto.message_field(24)
     # The Metadata field can be used to provide additional information about the
     # cluster. It can be used for stats, logging, and varying filter behavior.
@@ -547,6 +618,12 @@ class Cluster(betterproto.Message):
     # *envoy.filters.http.router*.
     metadata: "__core_v3__.Metadata" = betterproto.message_field(25)
     # Determines how Envoy selects the protocol used to speak to upstream hosts.
+    # This has been deprecated in favor of setting explicit protocol selection in
+    # the :ref:`http_protocol_options
+    # <envoy_v3_api_msg_extensions.upstreams.http.v3.HttpProtocolOptions>`
+    # message. http_protocol_options can be set via the cluster's :ref:`extension
+    # _protocol_options<envoy_v3_api_field_config.cluster.v3.Cluster.typed_extens
+    # ion_protocol_options>`.
     protocol_selection: "ClusterClusterProtocolSelection" = betterproto.enum_field(26)
     # Optional options for upstream connections.
     upstream_connection_options: "UpstreamConnectionOptions" = (
@@ -573,9 +650,9 @@ class Cluster(betterproto.Message):
     filters: List["Filter"] = betterproto.message_field(40)
     # [#not-implemented-hide:] New mechanism for LB policy configuration. Used
     # only if the
-    # :ref:`lb_policy<envoy_api_field_config.cluster.v3.Cluster.lb_policy>` field
-    # has the value :ref:`LOAD_BALANCING_POLICY_CONFIG<envoy_api_enum_value_confi
-    # g.cluster.v3.Cluster.LbPolicy.LOAD_BALANCING_POLICY_CONFIG>`.
+    # :ref:`lb_policy<envoy_v3_api_field_config.cluster.v3.Cluster.lb_policy>`
+    # field has the value :ref:`LOAD_BALANCING_POLICY_CONFIG<envoy_v3_api_enum_va
+    # lue_config.cluster.v3.Cluster.LbPolicy.LOAD_BALANCING_POLICY_CONFIG>`.
     load_balancing_policy: "LoadBalancingPolicy" = betterproto.message_field(41)
     # [#not-implemented-hide:] If present, tells the client where to send load
     # reports via LRS. If not present, the client will fall back to a client-side
@@ -598,7 +675,7 @@ class Cluster(betterproto.Message):
     # indicate that the request took the entirety of the timeout given to it. ..
     # attention::   This field has been deprecated in favor of `timeout_budgets`,
     # part of   :ref:`track_cluster_stats
-    # <envoy_api_field_config.cluster.v3.Cluster.track_cluster_stats>`.
+    # <envoy_v3_api_field_config.cluster.v3.Cluster.track_cluster_stats>`.
     track_timeout_budgets: bool = betterproto.bool_field(47)
     # Optional customization and configuration of upstream connection pool, and
     # upstream type. Currently this field only applies for HTTP traffic but is
@@ -612,18 +689,46 @@ class Cluster(betterproto.Message):
     # the TCP upstream if CONNECT termination is configured. If users desire
     # custom connection pool or upstream behavior, for example terminating
     # CONNECT only if a custom filter indicates it is appropriate, the custom
-    # factories can be registered and configured here.
+    # factories can be registered and configured here. [#extension-category:
+    # envoy.upstreams]
     upstream_config: "__core_v3__.TypedExtensionConfig" = betterproto.message_field(48)
     # Configuration to track optional cluster stats.
     track_cluster_stats: "TrackClusterStats" = betterproto.message_field(49)
-    # [#not-implemented-hide:] Prefetch configuration for this cluster.
-    prefetch_policy: "ClusterPrefetchPolicy" = betterproto.message_field(50)
+    # Preconnect configuration for this cluster.
+    preconnect_policy: "ClusterPreconnectPolicy" = betterproto.message_field(50)
     # If `connection_pool_per_downstream_connection` is true, the cluster will
     # use a separate connection pool for every downstream connection
     connection_pool_per_downstream_connection: bool = betterproto.bool_field(51)
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        if self.upstream_http_protocol_options:
+            warnings.warn(
+                "Cluster.upstream_http_protocol_options is deprecated",
+                DeprecationWarning,
+            )
+        if self.common_http_protocol_options:
+            warnings.warn(
+                "Cluster.common_http_protocol_options is deprecated", DeprecationWarning
+            )
+        if self.http_protocol_options:
+            warnings.warn(
+                "Cluster.http_protocol_options is deprecated", DeprecationWarning
+            )
+        if self.http2_protocol_options:
+            warnings.warn(
+                "Cluster.http2_protocol_options is deprecated", DeprecationWarning
+            )
+        if self.dns_resolvers:
+            warnings.warn("Cluster.dns_resolvers is deprecated", DeprecationWarning)
+        if self.use_tcp_for_dns_lookups:
+            warnings.warn(
+                "Cluster.use_tcp_for_dns_lookups is deprecated", DeprecationWarning
+            )
+        if self.protocol_selection:
+            warnings.warn(
+                "Cluster.protocol_selection is deprecated", DeprecationWarning
+            )
         if self.track_timeout_budgets:
             warnings.warn(
                 "Cluster.track_timeout_budgets is deprecated", DeprecationWarning
@@ -645,7 +750,8 @@ class ClusterTransportSocketMatch(betterproto.Message):
     # *envoy.transport_socket_match* is used to match against the values
     # specified in this field.
     match: "betterproto_lib_google_protobuf.Struct" = betterproto.message_field(2)
-    # The configuration of the transport socket.
+    # The configuration of the transport socket. [#extension-category:
+    # envoy.transport_sockets.upstream]
     transport_socket: "__core_v3__.TransportSocket" = betterproto.message_field(3)
 
 
@@ -658,6 +764,7 @@ class ClusterCustomClusterType(betterproto.Message):
     name: str = betterproto.string_field(1)
     # Cluster specific configuration which depends on the cluster being
     # instantiated. See the supported cluster for further documentation.
+    # [#extension-category: envoy.clusters]
     typed_config: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(2)
 
 
@@ -669,12 +776,8 @@ class ClusterEdsClusterConfig(betterproto.Message):
     eds_config: "__core_v3__.ConfigSource" = betterproto.message_field(1)
     # Optional alternative to cluster name to present to EDS. This does not have
     # the same restrictions as cluster name, i.e. it may be arbitrary length.
+    # This may be a xdstp:// URL.
     service_name: str = betterproto.string_field(2)
-    # Resource locator for EDS. This is mutually exclusive to *service_name*.
-    # [#not-implemented-hide:]
-    eds_resource_locator: "____udpa_core_v1__.ResourceLocator" = (
-        betterproto.message_field(3)
-    )
 
 
 @dataclass(eq=False, repr=False)
@@ -686,19 +789,20 @@ class ClusterLbSubsetConfig(betterproto.Message):
     """
 
     # The behavior used when no endpoint subset matches the selected route's
-    # metadata. The value defaults to :ref:`NO_FALLBACK<envoy_api_enum_value_conf
-    # ig.cluster.v3.Cluster.LbSubsetConfig.LbSubsetFallbackPolicy.NO_FALLBACK>`.
+    # metadata. The value defaults to :ref:`NO_FALLBACK<envoy_v3_api_enum_value_c
+    # onfig.cluster.v3.Cluster.LbSubsetConfig.LbSubsetFallbackPolicy.NO_FALLBACK>
+    # `.
     fallback_policy: "ClusterLbSubsetConfigLbSubsetFallbackPolicy" = (
         betterproto.enum_field(1)
     )
     # Specifies the default subset of endpoints used during fallback if
-    # fallback_policy is :ref:`DEFAULT_SUBSET<envoy_api_enum_value_config.cluster
-    # .v3.Cluster.LbSubsetConfig.LbSubsetFallbackPolicy.DEFAULT_SUBSET>`. Each
+    # fallback_policy is :ref:`DEFAULT_SUBSET<envoy_v3_api_enum_value_config.clus
+    # ter.v3.Cluster.LbSubsetConfig.LbSubsetFallbackPolicy.DEFAULT_SUBSET>`. Each
     # field in default_subset is compared to the matching LbEndpoint.Metadata
     # under the *envoy.lb* namespace. It is valid for no hosts to match, in which
     # case the behavior is the same as a fallback_policy of :ref:`NO_FALLBACK<env
-    # oy_api_enum_value_config.cluster.v3.Cluster.LbSubsetConfig.LbSubsetFallback
-    # Policy.NO_FALLBACK>`.
+    # oy_v3_api_enum_value_config.cluster.v3.Cluster.LbSubsetConfig.LbSubsetFallb
+    # ackPolicy.NO_FALLBACK>`.
     default_subset: "betterproto_lib_google_protobuf.Struct" = (
         betterproto.message_field(2)
     )
@@ -765,15 +869,15 @@ class ClusterLbSubsetConfigLbSubsetSelector(betterproto.Message):
     fallback_policy: "ClusterLbSubsetConfigLbSubsetSelectorLbSubsetSelectorFallbackPolicy" = betterproto.enum_field(
         2
     )
-    # Subset of :ref:`keys<envoy_api_field_config.cluster.v3.Cluster.LbSubsetConf
-    # ig.LbSubsetSelector.keys>` used by :ref:`KEYS_SUBSET<envoy_api_enum_value_c
-    # onfig.cluster.v3.Cluster.LbSubsetConfig.LbSubsetSelector.LbSubsetSelectorFa
-    # llbackPolicy.KEYS_SUBSET>` fallback policy. It has to be a non empty list
-    # if KEYS_SUBSET fallback policy is selected. For any other fallback policy
-    # the parameter is not used and should not be set. Only values also present
-    # in :ref:`keys<envoy_api_field_config.cluster.v3.Cluster.LbSubsetConfig.LbSu
-    # bsetSelector.keys>` are allowed, but `fallback_keys_subset` cannot be equal
-    # to `keys`.
+    # Subset of :ref:`keys<envoy_v3_api_field_config.cluster.v3.Cluster.LbSubsetC
+    # onfig.LbSubsetSelector.keys>` used by :ref:`KEYS_SUBSET<envoy_v3_api_enum_v
+    # alue_config.cluster.v3.Cluster.LbSubsetConfig.LbSubsetSelector.LbSubsetSele
+    # ctorFallbackPolicy.KEYS_SUBSET>` fallback policy. It has to be a non empty
+    # list if KEYS_SUBSET fallback policy is selected. For any other fallback
+    # policy the parameter is not used and should not be set. Only values also
+    # present in :ref:`keys<envoy_v3_api_field_config.cluster.v3.Cluster.LbSubset
+    # Config.LbSubsetSelector.keys>` are allowed, but `fallback_keys_subset`
+    # cannot be equal to `keys`.
     fallback_keys_subset: List[str] = betterproto.string_field(3)
 
 
@@ -815,19 +919,19 @@ class ClusterRingHashLbConfig(betterproto.Message):
     # Minimum hash ring size. The larger the ring is (that is, the more hashes
     # there are for each provided host) the better the request distribution will
     # reflect the desired weights. Defaults to 1024 entries, and limited to 8M
-    # entries. See also :ref:`maximum_ring_size<envoy_api_field_config.cluster.v3
-    # .Cluster.RingHashLbConfig.maximum_ring_size>`.
+    # entries. See also :ref:`maximum_ring_size<envoy_v3_api_field_config.cluster
+    # .v3.Cluster.RingHashLbConfig.maximum_ring_size>`.
     minimum_ring_size: Optional[int] = betterproto.message_field(
         1, wraps=betterproto.TYPE_UINT64
     )
     # The hash function used to hash hosts onto the ketama ring. The value
-    # defaults to :ref:`XX_HASH<envoy_api_enum_value_config.cluster.v3.Cluster.Ri
-    # ngHashLbConfig.HashFunction.XX_HASH>`.
+    # defaults to :ref:`XX_HASH<envoy_v3_api_enum_value_config.cluster.v3.Cluster
+    # .RingHashLbConfig.HashFunction.XX_HASH>`.
     hash_function: "ClusterRingHashLbConfigHashFunction" = betterproto.enum_field(3)
     # Maximum hash ring size. Defaults to 8M entries, and limited to 8M entries,
     # but can be lowered to further constrain resource use. See also :ref:`minimu
-    # m_ring_size<envoy_api_field_config.cluster.v3.Cluster.RingHashLbConfig.mini
-    # mum_ring_size>`.
+    # m_ring_size<envoy_v3_api_field_config.cluster.v3.Cluster.RingHashLbConfig.m
+    # inimum_ring_size>`.
     maximum_ring_size: Optional[int] = betterproto.message_field(
         4, wraps=betterproto.TYPE_UINT64
     )
@@ -845,8 +949,8 @@ class ClusterMaglevLbConfig(betterproto.Message):
     # rather than an absolute guarantee. Minimal disruption means that when the
     # set of upstreams changes, a connection will likely be sent to the same
     # upstream as it was before. Increasing the table size reduces the amount of
-    # disruption. The table size must be prime number. If it is not specified,
-    # the default is 65537.
+    # disruption. The table size must be prime number limited to 5000011. If it
+    # is not specified, the default is 65537.
     table_size: Optional[int] = betterproto.message_field(
         1, wraps=betterproto.TYPE_UINT64
     )
@@ -864,7 +968,8 @@ class ClusterOriginalDstLbConfig(betterproto.Message):
     # envoy-original-dst-host>` can be used to override destination address. ..
     # attention::   This header isn't sanitized by default, so enabling this
     # feature allows HTTP clients to   route traffic to arbitrary hosts and/or
-    # ports, which may have serious security   consequences.
+    # ports, which may have serious security   consequences. .. note::   If the
+    # header appears multiple times only the first value is used.
     use_http_header: bool = betterproto.bool_field(1)
 
 
@@ -899,21 +1004,10 @@ class ClusterCommonLbConfig(betterproto.Message):
     # adds/removes); this is because merging those updates isn't currently safe.
     # See https://github.com/envoyproxy/envoy/pull/3941.
     update_merge_window: timedelta = betterproto.message_field(4)
-    # If set to true, Envoy will not consider new hosts when computing load
+    # If set to true, Envoy will :ref:`exclude
+    # <arch_overview_load_balancing_excluded>` new hosts when computing load
     # balancing weights until they have been health checked for the first time.
     # This will have no effect unless active health checking is also configured.
-    # Ignoring a host means that for any load balancing calculations that adjust
-    # weights based on the ratio of eligible hosts and total hosts (priority
-    # spillover, locality weighting and panic mode) Envoy will exclude these
-    # hosts in the denominator. For example, with hosts in two priorities P0 and
-    # P1, where P0 looks like {healthy, unhealthy (new), unhealthy (new)} and
-    # where P1 looks like {healthy, healthy} all traffic will still hit P0, as 1
-    # / (3 - 2) = 1. Enabling this will allow scaling up the number of hosts for
-    # a given cluster without entering panic mode or triggering priority
-    # spillover, assuming the hosts pass the first health check. If panic mode is
-    # triggered, new hosts are still eligible for traffic; they simply do not
-    # contribute to the calculation when deciding whether panic mode is enabled
-    # or not.
     ignore_new_hosts_until_first_hc: bool = betterproto.bool_field(5)
     # If set to `true`, the cluster manager will drain all existing connections
     # to upstream hosts whenever hosts are added or removed from the cluster.
@@ -1003,66 +1097,66 @@ class ClusterCommonLbConfigConsistentHashingLbConfig(betterproto.Message):
 class ClusterRefreshRate(betterproto.Message):
     # Specifies the base interval between refreshes. This parameter is required
     # and must be greater than zero and less than :ref:`max_interval
-    # <envoy_api_field_config.cluster.v3.Cluster.RefreshRate.max_interval>`.
+    # <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.max_interval>`.
     base_interval: timedelta = betterproto.message_field(1)
     # Specifies the maximum interval between refreshes. This parameter is
     # optional, but must be greater than or equal to the :ref:`base_interval
-    # <envoy_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`  if
-    # set. The default is 10 times the :ref:`base_interval
-    # <envoy_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`.
+    # <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`
+    # if set. The default is 10 times the :ref:`base_interval
+    # <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`.
     max_interval: timedelta = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class ClusterPrefetchPolicy(betterproto.Message):
-    """[#not-implemented-hide:]"""
-
+class ClusterPreconnectPolicy(betterproto.Message):
     # Indicates how many streams (rounded up) can be anticipated per-upstream for
     # each incoming stream. This is useful for high-QPS or latency-sensitive
-    # services. Prefetching will only be done if the upstream is healthy. For
-    # example if this is 2, for an incoming HTTP/1.1 stream, 2 connections will
-    # be established, one for the new incoming stream, and one for a presumed
-    # follow-up stream. For HTTP/2, only one connection would be established by
-    # default as one connection can serve both the original and presumed follow-
-    # up stream. In steady state for non-multiplexed connections a value of 1.5
-    # would mean if there were 100 active streams, there would be 100 connections
-    # in use, and 50 connections prefetched. This might be a useful value for
-    # something like short lived single-use connections, for example proxying
-    # HTTP/1.1 if keep-alive were false and each stream resulted in connection
-    # termination. It would likely be overkill for long lived connections, such
-    # as TCP proxying SMTP or regular HTTP/1.1 with keep-alive. For long lived
-    # traffic, a value of 1.05 would be more reasonable, where for every 100
-    # connections, 5 prefetched connections would be in the queue in case of
-    # unexpected disconnects where the connection could not be reused. If this
-    # value is not set, or set explicitly to one, Envoy will fetch as many
-    # connections as needed to serve streams in flight. This means in steady
-    # state if a connection is torn down, a subsequent streams will pay an
-    # upstream-rtt latency penalty waiting for streams to be prefetched. This is
-    # limited somewhat arbitrarily to 3 because prefetching connections too
-    # aggressively can harm latency more than the prefetching helps.
-    per_upstream_prefetch_ratio: Optional[float] = betterproto.message_field(
+    # services. Preconnecting will only be done if the upstream is healthy and
+    # the cluster has traffic. For example if this is 2, for an incoming HTTP/1.1
+    # stream, 2 connections will be established, one for the new incoming stream,
+    # and one for a presumed follow-up stream. For HTTP/2, only one connection
+    # would be established by default as one connection can serve both the
+    # original and presumed follow-up stream. In steady state for non-multiplexed
+    # connections a value of 1.5 would mean if there were 100 active streams,
+    # there would be 100 connections in use, and 50 connections preconnected.
+    # This might be a useful value for something like short lived single-use
+    # connections, for example proxying HTTP/1.1 if keep-alive were false and
+    # each stream resulted in connection termination. It would likely be overkill
+    # for long lived connections, such as TCP proxying SMTP or regular HTTP/1.1
+    # with keep-alive. For long lived traffic, a value of 1.05 would be more
+    # reasonable, where for every 100 connections, 5 preconnected connections
+    # would be in the queue in case of unexpected disconnects where the
+    # connection could not be reused. If this value is not set, or set explicitly
+    # to one, Envoy will fetch as many connections as needed to serve streams in
+    # flight. This means in steady state if a connection is torn down, a
+    # subsequent streams will pay an upstream-rtt latency penalty waiting for a
+    # new connection. This is limited somewhat arbitrarily to 3 because
+    # preconnecting too aggressively can harm latency more than the preconnecting
+    # helps.
+    per_upstream_preconnect_ratio: Optional[float] = betterproto.message_field(
         1, wraps=betterproto.TYPE_DOUBLE
     )
     # Indicates how many many streams (rounded up) can be anticipated across a
     # cluster for each stream, useful for low QPS services. This is currently
     # supported for a subset of deterministic non-hash-based load-balancing
     # algorithms (weighted round robin, random). Unlike
-    # per_upstream_prefetch_ratio this prefetches across the upstream instances
-    # in a cluster, doing best effort predictions of what upstream would be
-    # picked next and pre-establishing a connection. For example if prefetching
-    # is set to 2 for a round robin HTTP/2 cluster, on the first incoming stream,
-    # 2 connections will be prefetched - one to the first upstream for this
-    # cluster, one to the second on the assumption there will be a follow-up
-    # stream. Prefetching will be limited to one prefetch per configured upstream
-    # in the cluster. If this value is not set, or set explicitly to one, Envoy
-    # will fetch as many connections as needed to serve streams in flight, so
-    # during warm up and in steady state if a connection is closed (and
-    # per_upstream_prefetch_ratio is not set), there will be a latency hit for
-    # connection establishment. If both this and prefetch_ratio are set, Envoy
-    # will make sure both predicted needs are met, basically prefetching
-    # max(predictive-prefetch, per-upstream-prefetch), for each upstream.
-    # TODO(alyssawilk) per LB docs and LB overview docs when unhiding.
-    predictive_prefetch_ratio: Optional[float] = betterproto.message_field(
+    # *per_upstream_preconnect_ratio* this preconnects across the upstream
+    # instances in a cluster, doing best effort predictions of what upstream
+    # would be picked next and pre-establishing a connection. Preconnecting will
+    # be limited to one preconnect per configured upstream in the cluster and
+    # will only be done if there are healthy upstreams and the cluster has
+    # traffic. For example if preconnecting is set to 2 for a round robin HTTP/2
+    # cluster, on the first incoming stream, 2 connections will be preconnected -
+    # one to the first upstream for this cluster, one to the second on the
+    # assumption there will be a follow-up stream. If this value is not set, or
+    # set explicitly to one, Envoy will fetch as many connections as needed to
+    # serve streams in flight, so during warm up and in steady state if a
+    # connection is closed (and per_upstream_preconnect_ratio is not set), there
+    # will be a latency hit for connection establishment. If both this and
+    # preconnect_ratio are set, Envoy will make sure both predicted needs are
+    # met, basically preconnecting max(predictive-preconnect, per-upstream-
+    # preconnect), for each upstream.
+    predictive_preconnect_ratio: Optional[float] = betterproto.message_field(
         2, wraps=betterproto.TYPE_DOUBLE
     )
 
@@ -1135,7 +1229,7 @@ class TrackClusterStats(betterproto.Message):
     request_response_sizes: bool = betterproto.bool_field(2)
 
 
-from .....udpa.core import v1 as ____udpa_core_v1__
+from .....xds.core import v3 as ____xds_core_v3__
 from ....type import v3 as ___type_v3__
 from ...core import v3 as __core_v3__
 from ...endpoint import v3 as __endpoint_v3__

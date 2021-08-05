@@ -10,8 +10,9 @@ from betterproto.grpc.grpclib_server import ServiceBase
 @dataclass(eq=False, repr=False)
 class WasmAccessLog(betterproto.Message):
     """
-    [[#not-implemented-hide:] Custom configuration for an :ref:`AccessLog
-    <envoy_api_msg_config.accesslog.v3.AccessLog>` that calls into a WASM VM.
+    Custom configuration for an :ref:`AccessLog
+    <envoy_v3_api_msg_config.accesslog.v3.AccessLog>` that calls into a WASM
+    VM. Configures the built-in *envoy.access_loggers.wasm* AccessLog.
     """
 
     config: "___wasm_v3__.PluginConfig" = betterproto.message_field(1)

@@ -23,13 +23,6 @@ class DnsTable(betterproto.Message):
     # By leaving this list empty, Envoy will forward all queries to external
     # resolvers
     virtual_domains: List["DnsTableDnsVirtualDomain"] = betterproto.message_field(2)
-    # This field serves to help Envoy determine whether it can authoritatively
-    # answer a query for a name matching a suffix in this list. If the query name
-    # does not match a suffix in this list, Envoy will forward the query to an
-    # upstream DNS server
-    known_suffixes: List[
-        "___type_matcher_v4_alpha__.StringMatcher"
-    ] = betterproto.message_field(3)
 
 
 @dataclass(eq=False, repr=False)
@@ -128,6 +121,3 @@ class DnsTableDnsVirtualDomain(betterproto.Message):
     # Sets the TTL in DNS answers from Envoy returned to the client. The default
     # TTL is 300s
     answer_ttl: timedelta = betterproto.message_field(3)
-
-
-from ....type.matcher import v4alpha as ___type_matcher_v4_alpha__

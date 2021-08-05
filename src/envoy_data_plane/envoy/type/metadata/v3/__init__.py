@@ -12,7 +12,7 @@ from betterproto.grpc.grpclib_server import ServiceBase
 class MetadataKey(betterproto.Message):
     """
     MetadataKey provides a general interface using `key` and `path` to retrieve
-    value from :ref:`Metadata <envoy_api_msg_config.core.v3.Metadata>`. For
+    value from :ref:`Metadata <envoy_v3_api_msg_config.core.v3.Metadata>`. For
     example, for the following Metadata: .. code-block:: yaml
     filter_metadata:      envoy.xxx:        prop:          foo: bar
     xyz:            hello: envoy The following MetadataKey will retrieve a
@@ -68,7 +68,7 @@ class MetadataKindRequest(betterproto.Message):
 class MetadataKindRoute(betterproto.Message):
     """
     Represents metadata from :ref:`the
-    route<envoy_api_field_config.route.v3.Route.metadata>`.
+    route<envoy_v3_api_field_config.route.v3.Route.metadata>`.
     """
 
     pass
@@ -78,7 +78,7 @@ class MetadataKindRoute(betterproto.Message):
 class MetadataKindCluster(betterproto.Message):
     """
     Represents metadata from :ref:`the upstream
-    cluster<envoy_api_field_config.cluster.v3.Cluster.metadata>`.
+    cluster<envoy_v3_api_field_config.cluster.v3.Cluster.metadata>`.
     """
 
     pass
@@ -88,7 +88,7 @@ class MetadataKindCluster(betterproto.Message):
 class MetadataKindHost(betterproto.Message):
     """
     Represents metadata from :ref:`the upstream
-    host<envoy_api_field_config.endpoint.v3.LbEndpoint.metadata>`.
+    host<envoy_v3_api_field_config.endpoint.v3.LbEndpoint.metadata>`.
     """
 
     pass

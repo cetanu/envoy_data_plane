@@ -21,7 +21,7 @@ class RateLimitPerRouteVhRateLimitsOptions(betterproto.Enum):
 
 @dataclass(eq=False, repr=False)
 class RateLimit(betterproto.Message):
-    """[#next-free-field: 9]"""
+    """[#next-free-field: 10]"""
 
     # The rate limit domain to use when calling the rate limit service.
     domain: str = betterproto.string_field(1)
@@ -41,8 +41,7 @@ class RateLimit(betterproto.Message):
     timeout: timedelta = betterproto.message_field(4)
     # The filter's behaviour in case the rate limiting service does not respond
     # back. When it is set to true, Envoy will not allow traffic in case of
-    # communication failure between rate limiting service and the proxy. Defaults
-    # to false.
+    # communication failure between rate limiting service and the proxy.
     failure_mode_deny: bool = betterproto.bool_field(5)
     # Specifies whether a `RESOURCE_EXHAUSTED` gRPC code must be returned instead
     # of the default `UNAVAILABLE` gRPC code for a rate limited gRPC call. The
@@ -76,6 +75,11 @@ class RateLimit(betterproto.Message):
     enable_x_ratelimit_headers: "RateLimitXRateLimitHeadersRfcVersion" = (
         betterproto.enum_field(8)
     )
+    # Disables emitting the :ref:`x-envoy-
+    # ratelimited<config_http_filters_router_x-envoy-ratelimited>` header in case
+    # of rate limiting (i.e. 429 responses). Having this header not present
+    # potentially makes the request retriable.
+    disable_x_envoy_ratelimited_header: bool = betterproto.bool_field(9)
 
 
 @dataclass(eq=False, repr=False)

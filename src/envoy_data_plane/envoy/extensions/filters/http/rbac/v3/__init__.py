@@ -12,12 +12,16 @@ class Rbac(betterproto.Message):
     """RBAC filter config."""
 
     # Specify the RBAC rules to be applied globally. If absent, no enforcing RBAC
-    # policy will be applied.
+    # policy will be applied. If present and empty, DENY.
     rules: "_____config_rbac_v3__.Rbac" = betterproto.message_field(1)
     # Shadow rules are not enforced by the filter (i.e., returning a 403) but
     # will emit stats and logs and can be used for rule testing. If absent, no
     # shadow RBAC policy will be applied.
     shadow_rules: "_____config_rbac_v3__.Rbac" = betterproto.message_field(2)
+    # If specified, shadow rules will emit stats with the given prefix. This is
+    # useful to distinguish the stat when there are more than 1 RBAC filter
+    # configured with shadow rules.
+    shadow_rules_stat_prefix: str = betterproto.string_field(3)
 
 
 @dataclass(eq=False, repr=False)

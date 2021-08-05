@@ -38,7 +38,7 @@ class FaultAbortHeaderAbort(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class HttpFault(betterproto.Message):
-    """[#next-free-field: 15]"""
+    """[#next-free-field: 16]"""
 
     # If specified, the filter will inject delays based on the values in the
     # object.
@@ -53,12 +53,12 @@ class HttpFault(betterproto.Message):
     # Specifies a set of headers that the filter should match on. The fault
     # injection filter can be applied selectively to requests that match a set of
     # headers specified in the fault filter config. The chances of actual fault
-    # injection further depend on the value of the :ref:`percentage <envoy_api_fi
-    # eld_extensions.filters.http.fault.v4alpha.FaultAbort.percentage>` field.
-    # The filter will check the request's headers against all the specified
-    # headers in the filter config. A match will happen if all the headers in the
-    # config are present in the request with the same values (or based on
-    # presence if the *value* field is not in the config).
+    # injection further depend on the value of the :ref:`percentage <envoy_v3_api
+    # _field_extensions.filters.http.fault.v3.FaultAbort.percentage>` field. The
+    # filter will check the request's headers against all the specified headers
+    # in the filter config. A match will happen if all the headers in the config
+    # are present in the request with the same values (or based on presence if
+    # the *value* field is not in the config).
     headers: List[
         "_____config_route_v4_alpha__.HeaderMatcher"
     ] = betterproto.message_field(4)
@@ -119,6 +119,12 @@ class HttpFault(betterproto.Message):
     # <config_http_filters_fault_injection_runtime>` runtime. The default is:
     # fault.http.abort.grpc_status
     abort_grpc_status_runtime: str = betterproto.string_field(14)
+    # To control whether stats storage is allocated dynamically for each
+    # downstream server. If set to true, "x-envoy-downstream-service-cluster"
+    # field of header will be ignored by this filter. If set to false, dynamic
+    # stats storage will be allocated for the downstream cluster name. Default
+    # value is false.
+    disable_downstream_cluster_stats: bool = betterproto.bool_field(15)
 
 
 from ......config.route import v4alpha as _____config_route_v4_alpha__

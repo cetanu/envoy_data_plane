@@ -31,7 +31,7 @@ class StreamTapsRequestIdentifier(betterproto.Message):
     # The node sending taps over the stream.
     node: "___config_core_v4_alpha__.Node" = betterproto.message_field(1)
     # The opaque identifier that was set in the :ref:`output config
-    # <envoy_api_field_config.tap.v4alpha.StreamingGrpcSink.tap_id>`.
+    # <envoy_v3_api_field_config.tap.v3.StreamingGrpcSink.tap_id>`.
     tap_id: str = betterproto.string_field(2)
 
 

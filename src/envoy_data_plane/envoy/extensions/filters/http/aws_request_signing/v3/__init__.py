@@ -23,8 +23,14 @@ class AwsRequestSigning(betterproto.Message):
     # used and no rewrite will happen. Note: this rewrite affects both signing
     # and host header forwarding. However, this option shouldn't be used with
     # :ref:`HCM host rewrite
-    # <envoy_api_field_config.route.v3.RouteAction.host_rewrite_literal>` given
-    # that the value set here would be used for signing whereas the value set in
-    # the HCM would be used for host header forwarding which is not the desired
-    # outcome.
+    # <envoy_v3_api_field_config.route.v3.RouteAction.host_rewrite_literal>`
+    # given that the value set here would be used for signing whereas the value
+    # set in the HCM would be used for host header forwarding which is not the
+    # desired outcome.
     host_rewrite: str = betterproto.string_field(3)
+    # Instead of buffering the request to calculate the payload hash, use the
+    # literal string ``UNSIGNED-PAYLOAD`` to calculate the payload hash. Not all
+    # services support this option. See the `S3
+    # <https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-
+    # auth.html>`_ policy for details.
+    use_unsigned_payload: bool = betterproto.bool_field(4)

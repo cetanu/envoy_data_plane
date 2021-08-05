@@ -22,7 +22,7 @@ class Tracing(betterproto.Message):
     used by Envoy. Envoy may support other tracers in the future, but right now
     the HTTP tracer is the only one supported. .. attention::   Use of this
     message type has been deprecated in favor of direct use of
-    :ref:`Tracing.Http <envoy_api_msg_config.trace.v4alpha.Tracing.Http>`.
+    :ref:`Tracing.Http <envoy_v3_api_msg_config.trace.v3.Tracing.Http>`.
     """
 
     # Provides configuration for the HTTP tracer.
@@ -33,17 +33,16 @@ class Tracing(betterproto.Message):
 class TracingHttp(betterproto.Message):
     """
     Configuration for an HTTP tracer provider used by Envoy. The configuration
-    is defined by the :ref:`HttpConnectionManager.Tracing <envoy_api_msg_extens
-    ions.filters.network.http_connection_manager.v4alpha.HttpConnectionManager.
-    Tracing>` :ref:`provider <envoy_api_field_extensions.filters.network.http_c
-    onnection_manager.v4alpha.HttpConnectionManager.Tracing.provider>` field.
+    is defined by the :ref:`HttpConnectionManager.Tracing <envoy_v3_api_msg_ext
+    ensions.filters.network.http_connection_manager.v3.HttpConnectionManager.Tr
+    acing>` :ref:`provider <envoy_v3_api_field_extensions.filters.network.http_
+    connection_manager.v3.HttpConnectionManager.Tracing.provider>` field.
     """
 
     # The name of the HTTP trace driver to instantiate. The name must match a
-    # supported HTTP trace driver. Built-in trace drivers: -
-    # *envoy.tracers.lightstep* - *envoy.tracers.zipkin* -
-    # *envoy.tracers.dynamic_ot* - *envoy.tracers.datadog* -
-    # *envoy.tracers.opencensus* - *envoy.tracers.xray*
+    # supported HTTP trace driver. See the :ref:`extensions listed in
+    # typed_config below <extension_category_envoy.tracers>` for the default list
+    # of the HTTP trace driver.
     name: str = betterproto.string_field(1)
     typed_config: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(
         3, group="config_type"

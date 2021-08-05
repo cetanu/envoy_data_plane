@@ -28,11 +28,7 @@ class ExtAuthz(betterproto.Message):
     # 5xx error. Note that errors can be *always* tracked in the :ref:`stats
     # <config_http_filters_ext_authz_stats>`.
     failure_mode_allow: bool = betterproto.bool_field(2)
-    # Sets the package version the gRPC service should use. This is particularly
-    # useful when transitioning from alpha to release versions assuming that both
-    # definitions are semantically compatible. Deprecation note: This field is
-    # deprecated and should only be used for version upgrade. See release notes
-    # for more details.
+    # [#not-implemented-hide: Support for this field has been removed.]
     use_alpha: bool = betterproto.bool_field(4)
     # Enables filter to buffer the client request body and send it within the
     # authorization request. A ``x-envoy-auth-partial-body: false|true`` metadata

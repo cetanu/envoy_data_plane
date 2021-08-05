@@ -20,16 +20,15 @@ class Body(betterproto.Message):
     # field, as the proto `bytes` type can contain any valid byte.
     as_bytes: bytes = betterproto.bytes_field(1, group="body_type")
     # Body data as string. This field is only used when the
-    # :ref:`JSON_BODY_AS_STRING
-    # <envoy_api_enum_value_config.tap.v3.OutputSink.Format.JSON_BODY_AS_STRING>`
-    # sink format type is selected. See the documentation for that option for why
-    # this is useful.
+    # :ref:`JSON_BODY_AS_STRING <envoy_v3_api_enum_value_config.tap.v3.OutputSink
+    # .Format.JSON_BODY_AS_STRING>` sink format type is selected. See the
+    # documentation for that option for why this is useful.
     as_string: str = betterproto.string_field(2, group="body_type")
     # Specifies whether body data has been truncated to fit within the specified
     # :ref:`max_buffered_rx_bytes
-    # <envoy_api_field_config.tap.v3.OutputConfig.max_buffered_rx_bytes>` and
+    # <envoy_v3_api_field_config.tap.v3.OutputConfig.max_buffered_rx_bytes>` and
     # :ref:`max_buffered_tx_bytes
-    # <envoy_api_field_config.tap.v3.OutputConfig.max_buffered_tx_bytes>`
+    # <envoy_v3_api_field_config.tap.v3.OutputConfig.max_buffered_tx_bytes>`
     # settings.
     truncated: bool = betterproto.bool_field(3)
 
@@ -151,12 +150,12 @@ class SocketBufferedTrace(betterproto.Message):
     events: List["SocketEvent"] = betterproto.message_field(3)
     # Set to true if read events were truncated due to the
     # :ref:`max_buffered_rx_bytes
-    # <envoy_api_field_config.tap.v3.OutputConfig.max_buffered_rx_bytes>`
+    # <envoy_v3_api_field_config.tap.v3.OutputConfig.max_buffered_rx_bytes>`
     # setting.
     read_truncated: bool = betterproto.bool_field(4)
     # Set to true if write events were truncated due to the
     # :ref:`max_buffered_tx_bytes
-    # <envoy_api_field_config.tap.v3.OutputConfig.max_buffered_tx_bytes>`
+    # <envoy_v3_api_field_config.tap.v3.OutputConfig.max_buffered_tx_bytes>`
     # setting.
     write_truncated: bool = betterproto.bool_field(5)
 

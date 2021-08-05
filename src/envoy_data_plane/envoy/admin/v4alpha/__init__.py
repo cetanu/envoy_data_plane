@@ -14,6 +14,30 @@ class SimpleMetricType(betterproto.Enum):
     GAUGE = 1
 
 
+class ClientResourceStatus(betterproto.Enum):
+    """
+    Resource status from the view of a xDS client, which tells the
+    synchronization status between the xDS client and the xDS server.
+    """
+
+    # Resource status is not available/unknown.
+    UNKNOWN = 0
+    # Client requested this resource but hasn't received any update from
+    # management server. The client will not fail requests, but will queue them
+    # until update arrives or the client times out waiting for the resource.
+    REQUESTED = 1
+    # This resource has been requested by the client but has either not been
+    # delivered by the server or was previously delivered by the server and then
+    # subsequently removed from resources provided by the server. For more
+    # information, please refer to the :ref:`"Knowing When a Requested Resource
+    # Does Not Exist" <xds_protocol_resource_not_existed>` section.
+    DOES_NOT_EXIST = 2
+    # Client received this resource and replied with ACK.
+    ACKED = 3
+    # Client received this resource and replied with NACK.
+    NACKED = 4
+
+
 class ServerInfoState(betterproto.Enum):
     LIVE = 0
     DRAINING = 1
@@ -86,7 +110,7 @@ class Clusters(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class ClusterStatus(betterproto.Message):
     """
-    Details an individual cluster's current status. [#next-free-field: 7]
+    Details an individual cluster's current status. [#next-free-field: 8]
     """
 
     # Name of the cluster.
@@ -94,12 +118,12 @@ class ClusterStatus(betterproto.Message):
     # Denotes whether this cluster was added via API or configured statically.
     added_via_api: bool = betterproto.bool_field(2)
     # The success rate threshold used in the last interval. If :ref:`outlier_dete
-    # ction.split_external_local_origin_errors<envoy_api_field_config.cluster.v4a
-    # lpha.OutlierDetection.split_external_local_origin_errors>` is *false*, all
+    # ction.split_external_local_origin_errors<envoy_v3_api_field_config.cluster.
+    # v3.OutlierDetection.split_external_local_origin_errors>` is *false*, all
     # errors: externally and locally generated were used to calculate the
     # threshold. If :ref:`outlier_detection.split_external_local_origin_errors<en
-    # voy_api_field_config.cluster.v4alpha.OutlierDetection.split_external_local_
-    # origin_errors>` is *true*, only externally generated errors were used to
+    # voy_v3_api_field_config.cluster.v3.OutlierDetection.split_external_local_or
+    # igin_errors>` is *true*, only externally generated errors were used to
     # calculate the threshold. The threshold is used to eject hosts based on
     # their success rate. See :ref:`Cluster outlier detection
     # <arch_overview_outlier_detection>` documentation for details. Note: this
@@ -116,9 +140,9 @@ class ClusterStatus(betterproto.Message):
     # The success rate threshold used in the last interval when only locally
     # originated failures were taken into account and externally originated
     # errors were treated as success. This field should be interpreted only when
-    # :ref:`outlier_detection.split_external_local_origin_errors<envoy_api_field_
-    # config.cluster.v4alpha.OutlierDetection.split_external_local_origin_errors>
-    # ` is *true*. The threshold is used to eject hosts based on their success
+    # :ref:`outlier_detection.split_external_local_origin_errors<envoy_v3_api_fie
+    # ld_config.cluster.v3.OutlierDetection.split_external_local_origin_errors>`
+    # is *true*. The threshold is used to eject hosts based on their success
     # rate. See :ref:`Cluster outlier detection
     # <arch_overview_outlier_detection>` documentation for details. Note: this
     # field may be omitted in any of the three following cases: 1. There were not
@@ -134,6 +158,8 @@ class ClusterStatus(betterproto.Message):
     circuit_breakers: "__config_cluster_v4_alpha__.CircuitBreakers" = (
         betterproto.message_field(6)
     )
+    # Observability name of the cluster.
+    observability_name: str = betterproto.string_field(7)
 
 
 @dataclass(eq=False, repr=False)
@@ -147,13 +173,13 @@ class HostStatus(betterproto.Message):
     # The host's current health status.
     health_status: "HostHealthStatus" = betterproto.message_field(3)
     # Request success rate for this host over the last calculated interval. If :r
-    # ef:`outlier_detection.split_external_local_origin_errors<envoy_api_field_co
-    # nfig.cluster.v4alpha.OutlierDetection.split_external_local_origin_errors>`
-    # is *false*, all errors: externally and locally generated were used in
-    # success rate calculation. If :ref:`outlier_detection.split_external_local_o
-    # rigin_errors<envoy_api_field_config.cluster.v4alpha.OutlierDetection.split_
-    # external_local_origin_errors>` is *true*, only externally generated errors
-    # were used in success rate calculation. See :ref:`Cluster outlier detection
+    # ef:`outlier_detection.split_external_local_origin_errors<envoy_v3_api_field
+    # _config.cluster.v3.OutlierDetection.split_external_local_origin_errors>` is
+    # *false*, all errors: externally and locally generated were used in success
+    # rate calculation. If :ref:`outlier_detection.split_external_local_origin_er
+    # rors<envoy_v3_api_field_config.cluster.v3.OutlierDetection.split_external_l
+    # ocal_origin_errors>` is *true*, only externally generated errors were used
+    # in success rate calculation. See :ref:`Cluster outlier detection
     # <arch_overview_outlier_detection>` documentation for details. Note: the
     # message will not be present if host did not have enough request volume to
     # calculate success rate or the cluster did not have enough hosts to run
@@ -170,8 +196,8 @@ class HostStatus(betterproto.Message):
     # only locally originated errors are taken into account and externally
     # originated errors were treated as success. This field should be interpreted
     # only when :ref:`outlier_detection.split_external_local_origin_errors<envoy_
-    # api_field_config.cluster.v4alpha.OutlierDetection.split_external_local_orig
-    # in_errors>` is *true*. See :ref:`Cluster outlier detection
+    # v3_api_field_config.cluster.v3.OutlierDetection.split_external_local_origin
+    # _errors>` is *true*. See :ref:`Cluster outlier detection
     # <arch_overview_outlier_detection>` documentation for details. Note: the
     # message will not be present if host did not have enough request volume to
     # calculate success rate or the cluster did not have enough hosts to run
@@ -183,7 +209,7 @@ class HostStatus(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class HostHealthStatus(betterproto.Message):
-    """Health status for a host. [#next-free-field: 7]"""
+    """Health status for a host. [#next-free-field: 9]"""
 
     # The host is currently failing active health checks.
     failed_active_health_check: bool = betterproto.bool_field(1)
@@ -197,6 +223,12 @@ class HostHealthStatus(betterproto.Message):
     pending_dynamic_removal: bool = betterproto.bool_field(5)
     # The host has not yet been health checked.
     pending_active_hc: bool = betterproto.bool_field(6)
+    # The host should be excluded from panic, spillover, etc. calculations
+    # because it was explicitly taken out of rotation via protocol signal and is
+    # not meant to be routed to.
+    excluded_via_immediate_hc_fail: bool = betterproto.bool_field(7)
+    # The host failed active HC due to timeout.
+    active_hc_timeout: bool = betterproto.bool_field(8)
     # Health status as reported by EDS. Note: only HEALTHY and UNHEALTHY are
     # currently supported here. [#comment:TODO(mrice32): pipe through remaining
     # EDS health status possibilities.]
@@ -252,16 +284,18 @@ class ConfigDump(betterproto.Message):
     # :ref:`/config_dump <operations_admin_interface_config_dump>` endpoint. The
     # following configurations are currently supported and will be dumped in the
     # order given below: * *bootstrap*: :ref:`BootstrapConfigDump
-    # <envoy_api_msg_admin.v4alpha.BootstrapConfigDump>` * *clusters*:
-    # :ref:`ClustersConfigDump <envoy_api_msg_admin.v4alpha.ClustersConfigDump>`
-    # * *endpoints*:  :ref:`EndpointsConfigDump
-    # <envoy_api_msg_admin.v4alpha.EndpointsConfigDump>` * *listeners*:
-    # :ref:`ListenersConfigDump
-    # <envoy_api_msg_admin.v4alpha.ListenersConfigDump>` * *routes*:
-    # :ref:`RoutesConfigDump <envoy_api_msg_admin.v4alpha.RoutesConfigDump>` EDS
-    # Configuration will only be dumped by using parameter `?include_eds` You can
-    # filter output with the resource and mask query parameters. See
-    # :ref:`/config_dump?resource={}
+    # <envoy_v3_api_msg_admin.v3.BootstrapConfigDump>` * *clusters*:
+    # :ref:`ClustersConfigDump <envoy_v3_api_msg_admin.v3.ClustersConfigDump>` *
+    # *endpoints*:  :ref:`EndpointsConfigDump
+    # <envoy_v3_api_msg_admin.v3.EndpointsConfigDump>` * *listeners*:
+    # :ref:`ListenersConfigDump <envoy_v3_api_msg_admin.v3.ListenersConfigDump>`
+    # * *scoped_routes*: :ref:`ScopedRoutesConfigDump
+    # <envoy_v3_api_msg_admin.v3.ScopedRoutesConfigDump>` * *routes*:
+    # :ref:`RoutesConfigDump <envoy_v3_api_msg_admin.v3.RoutesConfigDump>` *
+    # *secrets*:  :ref:`SecretsConfigDump
+    # <envoy_v3_api_msg_admin.v3.SecretsConfigDump>` EDS Configuration will only
+    # be dumped by using parameter `?include_eds` You can filter output with the
+    # resource and mask query parameters. See :ref:`/config_dump?resource={}
     # <operations_admin_interface_config_dump_by_resource>`,
     # :ref:`/config_dump?mask={}
     # <operations_admin_interface_config_dump_by_mask>`, or
@@ -274,7 +308,8 @@ class ConfigDump(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class UpdateFailureState(betterproto.Message):
     # What the component configuration would have been if the update had
-    # succeeded.
+    # succeeded. This field may not be populated by xDS clients due to storage
+    # overhead.
     failed_configuration: "betterproto_lib_google_protobuf.Any" = (
         betterproto.message_field(1)
     )
@@ -282,6 +317,8 @@ class UpdateFailureState(betterproto.Message):
     last_update_attempt: datetime = betterproto.message_field(2)
     # Details about the last failed update attempt.
     details: str = betterproto.string_field(3)
+    # This is the version of the rejected resource. [#not-implemented-hide:]
+    version_info: str = betterproto.string_field(4)
 
 
 @dataclass(eq=False, repr=False)
@@ -309,7 +346,7 @@ class ListenersConfigDump(betterproto.Message):
     """
 
     # This is the :ref:`version_info
-    # <envoy_api_field_service.discovery.v4alpha.DiscoveryResponse.version_info>`
+    # <envoy_v3_api_field_service.discovery.v3.DiscoveryResponse.version_info>`
     # in the last processed LDS discovery response. If there are only static
     # bootstrap listeners, this field will be "".
     version_info: str = betterproto.string_field(1)
@@ -337,7 +374,7 @@ class ListenersConfigDumpStaticListener(betterproto.Message):
 class ListenersConfigDumpDynamicListenerState(betterproto.Message):
     # This is the per-resource version information. This version is currently
     # taken from the :ref:`version_info
-    # <envoy_api_field_service.discovery.v4alpha.DiscoveryResponse.version_info>`
+    # <envoy_v3_api_field_service.discovery.v3.DiscoveryResponse.version_info>`
     # field at the time that the listener was loaded. In the future, discrete
     # per-listener versions may be supported by the API.
     version_info: str = betterproto.string_field(1)
@@ -351,7 +388,7 @@ class ListenersConfigDumpDynamicListenerState(betterproto.Message):
 class ListenersConfigDumpDynamicListener(betterproto.Message):
     """
     Describes a dynamically loaded listener via the LDS API. [#next-free-field:
-    6]
+    7]
     """
 
     # The name or unique id of this listener, pulled from the
@@ -379,7 +416,12 @@ class ListenersConfigDumpDynamicListener(betterproto.Message):
         betterproto.message_field(4)
     )
     # Set if the last update failed, cleared after the next successful update.
+    # The *error_state* field contains the rejected version of this particular
+    # resource along with the reason and timestamp. For successfully updated or
+    # acknowledged resource, this field should be empty.
     error_state: "UpdateFailureState" = betterproto.message_field(5)
+    # The client status of this resource. [#not-implemented-hide:]
+    client_status: "ClientResourceStatus" = betterproto.enum_field(6)
 
 
 @dataclass(eq=False, repr=False)
@@ -392,7 +434,7 @@ class ClustersConfigDump(betterproto.Message):
     """
 
     # This is the :ref:`version_info
-    # <envoy_api_field_service.discovery.v4alpha.DiscoveryResponse.version_info>`
+    # <envoy_v3_api_field_service.discovery.v3.DiscoveryResponse.version_info>`
     # in the last processed CDS discovery response. If there are only static
     # bootstrap clusters, this field will be "".
     version_info: str = betterproto.string_field(1)
@@ -426,11 +468,14 @@ class ClustersConfigDumpStaticCluster(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class ClustersConfigDumpDynamicCluster(betterproto.Message):
-    """Describes a dynamically loaded cluster via the CDS API."""
+    """
+    Describes a dynamically loaded cluster via the CDS API. [#next-free-field:
+    6]
+    """
 
     # This is the per-resource version information. This version is currently
     # taken from the :ref:`version_info
-    # <envoy_api_field_service.discovery.v4alpha.DiscoveryResponse.version_info>`
+    # <envoy_v3_api_field_service.discovery.v3.DiscoveryResponse.version_info>`
     # field at the time that the cluster was loaded. In the future, discrete per-
     # cluster versions may be supported by the API.
     version_info: str = betterproto.string_field(1)
@@ -438,6 +483,13 @@ class ClustersConfigDumpDynamicCluster(betterproto.Message):
     cluster: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(2)
     # The timestamp when the Cluster was last updated.
     last_updated: datetime = betterproto.message_field(3)
+    # Set if the last update failed, cleared after the next successful update.
+    # The *error_state* field contains the rejected version of this particular
+    # resource along with the reason and timestamp. For successfully updated or
+    # acknowledged resource, this field should be empty. [#not-implemented-hide:]
+    error_state: "UpdateFailureState" = betterproto.message_field(4)
+    # The client status of this resource. [#not-implemented-hide:]
+    client_status: "ClientResourceStatus" = betterproto.enum_field(5)
 
 
 @dataclass(eq=False, repr=False)
@@ -472,15 +524,24 @@ class RoutesConfigDumpStaticRouteConfig(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class RoutesConfigDumpDynamicRouteConfig(betterproto.Message):
+    """[#next-free-field: 6]"""
+
     # This is the per-resource version information. This version is currently
     # taken from the :ref:`version_info
-    # <envoy_api_field_service.discovery.v4alpha.DiscoveryResponse.version_info>`
+    # <envoy_v3_api_field_service.discovery.v3.DiscoveryResponse.version_info>`
     # field at the time that the route configuration was loaded.
     version_info: str = betterproto.string_field(1)
     # The route config.
     route_config: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(2)
     # The timestamp when the Route was last updated.
     last_updated: datetime = betterproto.message_field(3)
+    # Set if the last update failed, cleared after the next successful update.
+    # The *error_state* field contains the rejected version of this particular
+    # resource along with the reason and timestamp. For successfully updated or
+    # acknowledged resource, this field should be empty. [#not-implemented-hide:]
+    error_state: "UpdateFailureState" = betterproto.message_field(4)
+    # The client status of this resource. [#not-implemented-hide:]
+    client_status: "ClientResourceStatus" = betterproto.enum_field(5)
 
 
 @dataclass(eq=False, repr=False)
@@ -517,11 +578,13 @@ class ScopedRoutesConfigDumpInlineScopedRouteConfigs(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class ScopedRoutesConfigDumpDynamicScopedRouteConfigs(betterproto.Message):
+    """[#next-free-field: 7]"""
+
     # The name assigned to the scoped route configurations.
     name: str = betterproto.string_field(1)
     # This is the per-resource version information. This version is currently
     # taken from the :ref:`version_info
-    # <envoy_api_field_service.discovery.v4alpha.DiscoveryResponse.version_info>`
+    # <envoy_v3_api_field_service.discovery.v3.DiscoveryResponse.version_info>`
     # field at the time that the scoped routes configuration was loaded.
     version_info: str = betterproto.string_field(2)
     # The scoped route configurations.
@@ -530,6 +593,13 @@ class ScopedRoutesConfigDumpDynamicScopedRouteConfigs(betterproto.Message):
     ] = betterproto.message_field(3)
     # The timestamp when the scoped route config set was last updated.
     last_updated: datetime = betterproto.message_field(4)
+    # Set if the last update failed, cleared after the next successful update.
+    # The *error_state* field contains the rejected version of this particular
+    # resource along with the reason and timestamp. For successfully updated or
+    # acknowledged resource, this field should be empty. [#not-implemented-hide:]
+    error_state: "UpdateFailureState" = betterproto.message_field(5)
+    # The client status of this resource. [#not-implemented-hide:]
+    client_status: "ClientResourceStatus" = betterproto.enum_field(6)
 
 
 @dataclass(eq=False, repr=False)
@@ -556,7 +626,10 @@ class SecretsConfigDump(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class SecretsConfigDumpDynamicSecret(betterproto.Message):
-    """DynamicSecret contains secret information fetched via SDS."""
+    """
+    DynamicSecret contains secret information fetched via SDS. [#next-free-
+    field: 7]
+    """
 
     # The name assigned to the secret.
     name: str = betterproto.string_field(1)
@@ -568,6 +641,13 @@ class SecretsConfigDumpDynamicSecret(betterproto.Message):
     # (replaced with "[redacted]") for private keys and passwords in TLS
     # certificates.
     secret: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(4)
+    # Set if the last update failed, cleared after the next successful update.
+    # The *error_state* field contains the rejected version of this particular
+    # resource along with the reason and timestamp. For successfully updated or
+    # acknowledged resource, this field should be empty. [#not-implemented-hide:]
+    error_state: "UpdateFailureState" = betterproto.message_field(5)
+    # The client status of this resource. [#not-implemented-hide:]
+    client_status: "ClientResourceStatus" = betterproto.enum_field(6)
 
 
 @dataclass(eq=False, repr=False)
@@ -615,9 +695,11 @@ class EndpointsConfigDumpStaticEndpointConfig(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class EndpointsConfigDumpDynamicEndpointConfig(betterproto.Message):
+    """[#next-free-field: 6]"""
+
     # [#not-implemented-hide:] This is the per-resource version information. This
     # version is currently taken from the :ref:`version_info
-    # <envoy_api_field_service.discovery.v4alpha.DiscoveryResponse.version_info>`
+    # <envoy_v3_api_field_service.discovery.v3.DiscoveryResponse.version_info>`
     # field at the time that the endpoint configuration was loaded.
     version_info: str = betterproto.string_field(1)
     # The endpoint config.
@@ -626,6 +708,13 @@ class EndpointsConfigDumpDynamicEndpointConfig(betterproto.Message):
     )
     # [#not-implemented-hide:] The timestamp when the Endpoint was last updated.
     last_updated: datetime = betterproto.message_field(3)
+    # Set if the last update failed, cleared after the next successful update.
+    # The *error_state* field contains the rejected version of this particular
+    # resource along with the reason and timestamp. For successfully updated or
+    # acknowledged resource, this field should be empty. [#not-implemented-hide:]
+    error_state: "UpdateFailureState" = betterproto.message_field(4)
+    # The client status of this resource. [#not-implemented-hide:]
+    client_status: "ClientResourceStatus" = betterproto.enum_field(5)
 
 
 @dataclass(eq=False, repr=False)
@@ -681,7 +770,7 @@ class ServerInfo(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class CommandLineOptions(betterproto.Message):
-    """[#next-free-field: 37]"""
+    """[#next-free-field: 38]"""
 
     # See :option:`--base-id` for details.
     base_id: int = betterproto.uint64_field(1)
@@ -749,6 +838,8 @@ class CommandLineOptions(betterproto.Message):
     socket_path: str = betterproto.string_field(35)
     # See :option:`--socket-mode` for details.
     socket_mode: int = betterproto.uint32_field(36)
+    # See :option:`--enable-core-dump` for details.
+    enable_core_dump: bool = betterproto.bool_field(37)
 
 
 @dataclass(eq=False, repr=False)

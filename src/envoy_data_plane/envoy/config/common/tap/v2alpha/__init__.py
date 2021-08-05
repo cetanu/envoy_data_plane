@@ -18,21 +18,6 @@ class CommonExtensionConfig(betterproto.Message):
     static_config: "____service_tap_v2_alpha__.TapConfig" = betterproto.message_field(
         2, group="config_type"
     )
-    # [#not-implemented-hide:] Configuration to use for TapDS updates for the
-    # filter.
-    tapds_config: "CommonExtensionConfigTapDsConfig" = betterproto.message_field(
-        3, group="config_type"
-    )
-
-
-@dataclass(eq=False, repr=False)
-class CommonExtensionConfigTapDsConfig(betterproto.Message):
-    """[#not-implemented-hide:]"""
-
-    # Configuration for the source of TapDS updates for this Cluster.
-    config_source: "____api_v2_core__.ConfigSource" = betterproto.message_field(1)
-    # Tap config to request from XDS server.
-    name: str = betterproto.string_field(2)
 
 
 @dataclass(eq=False, repr=False)
@@ -48,5 +33,4 @@ class AdminConfig(betterproto.Message):
     config_id: str = betterproto.string_field(1)
 
 
-from .....api.v2 import core as ____api_v2_core__
 from .....service.tap import v2alpha as ____service_tap_v2_alpha__

@@ -22,9 +22,9 @@ class StreamEventsRequest(betterproto.Message):
     # occurred since the last message had been sent. If the server receives
     # unknown event type, it should silently ignore it. The following events are
     # supported: * :ref:`HealthCheckEvent
-    # <envoy_api_msg_data.core.v3.HealthCheckEvent>` *
+    # <envoy_v3_api_msg_data.core.v3.HealthCheckEvent>` *
     # :ref:`OutlierDetectionEvent
-    # <envoy_api_msg_data.cluster.v3.OutlierDetectionEvent>`
+    # <envoy_v3_api_msg_data.cluster.v3.OutlierDetectionEvent>`
     events: List["betterproto_lib_google_protobuf.Any"] = betterproto.message_field(2)
 
 

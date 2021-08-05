@@ -57,8 +57,8 @@ class CustomTagHeader(betterproto.Message):
 class CustomTagMetadata(betterproto.Message):
     """
     Metadata type custom tag using :ref:`MetadataKey
-    <envoy_api_msg_type.metadata.v3.MetadataKey>` to retrieve the protobuf
-    value from :ref:`Metadata <envoy_api_msg_config.core.v3.Metadata>`, and
+    <envoy_v3_api_msg_type.metadata.v3.MetadataKey>` to retrieve the protobuf
+    value from :ref:`Metadata <envoy_v3_api_msg_config.core.v3.Metadata>`, and
     populate the tag value with `the canonical JSON
     <https://developers.google.com/protocol-buffers/docs/proto3#json>`_
     representation of it.

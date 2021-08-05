@@ -8,9 +8,26 @@ import betterproto
 from betterproto.grpc.grpclib_server import ServiceBase
 
 
+class GrpcJsonTranscoderUrlUnescapeSpec(betterproto.Enum):
+    ALL_CHARACTERS_EXCEPT_RESERVED = 0
+    ALL_CHARACTERS_EXCEPT_SLASH = 1
+    ALL_CHARACTERS = 2
+
+
 @dataclass(eq=False, repr=False)
 class GrpcJsonTranscoder(betterproto.Message):
-    """[#next-free-field: 10]"""
+    """
+    [#next-free-field: 12] GrpcJsonTranscoder filter configuration. The filter
+    itself can be used per route / per virtual host or on the general level.
+    The most specific one is being used for a given route. If the list of
+    services is empty - filter is considered to be disabled. Note that if
+    specifying the filter per route, first the route is matched, and then
+    transcoding filter is applied. It matters when specifying the route
+    configuration and paths to match the request - for per-route grpc
+    transcoder configs, the original path should be matched, while in other
+    cases, the grpc-like path is expected (the one AFTER the filter is
+    applied).
+    """
 
     # Supplies the filename of :ref:`the proto descriptor set
     # <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services.
@@ -22,7 +39,12 @@ class GrpcJsonTranscoder(betterproto.Message):
     # "package_name.service_name") that the transcoder will translate. If the
     # service name doesn't exist in ``proto_descriptor``, Envoy will fail at
     # startup. The ``proto_descriptor`` may contain more services than the
-    # service names specified here, but they won't be translated.
+    # service names specified here, but they won't be translated. By default, the
+    # filter will pass through requests that do not map to any specified
+    # services. If the list of services is empty, filter is considered disabled.
+    # However, this behavior changes if :ref:`reject_unknown_method <envoy_v3_api
+    # _field_extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder.R
+    # equestValidationOptions.reject_unknown_method>` is enabled.
     services: List[str] = betterproto.string_field(2)
     # Control options for response JSON. These options are passed directly to
     # `JsonPrintOptions <https://developers.google.com/protocol-
@@ -76,6 +98,31 @@ class GrpcJsonTranscoder(betterproto.Message):
     # :ref:`proto descriptor set
     # <config_grpc_json_generate_proto_descriptor_set>`.
     convert_grpc_status: bool = betterproto.bool_field(9)
+    # URL unescaping policy. This spec is only applied when extracting variable
+    # with multiple segments. For example, in case of
+    # `/foo/{x=*}/bar/{y=prefix/*}/{z=**}` `x` variable is single segment and `y`
+    # and `z` are multiple segments. For a path with
+    # `/foo/first/bar/prefix/second/third/fourth`, `x=first`, `y=prefix/second`,
+    # `z=third/fourth`. If this setting is not specified, the value defaults to :
+    # ref:`ALL_CHARACTERS_EXCEPT_RESERVED<envoy_v3_api_enum_value_extensions.filt
+    # ers.http.grpc_json_transcoder.v3.GrpcJsonTranscoder.UrlUnescapeSpec.ALL_CHA
+    # RACTERS_EXCEPT_RESERVED>`.
+    url_unescape_spec: "GrpcJsonTranscoderUrlUnescapeSpec" = betterproto.enum_field(10)
+    # Configure the behavior when handling requests that cannot be transcoded. By
+    # default, the transcoder will silently pass through HTTP requests that are
+    # malformed. This includes requests with unknown query parameters, unregister
+    # paths, etc. Set these options to enable strict HTTP request validation,
+    # resulting in the transcoder rejecting such requests with a ``HTTP 4xx``.
+    # See each individual option for more details on the validation. gRPC
+    # requests will still silently pass through without transcoding. The benefit
+    # is a proper error message to the downstream. If the upstream is a gRPC
+    # server, it cannot handle the passed-through HTTP requests and will reset
+    # the TCP connection. The downstream will then receive a ``HTTP 503 Service
+    # Unavailable`` due to the upstream connection reset. This incorrect error
+    # message may conflict with other Envoy components, such as retry policies.
+    request_validation_options: "GrpcJsonTranscoderRequestValidationOptions" = (
+        betterproto.message_field(11)
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -97,3 +144,21 @@ class GrpcJsonTranscoderPrintOptions(betterproto.Message):
     # that order. Setting this flag will preserve the original field names.
     # Defaults to false.
     preserve_proto_field_names: bool = betterproto.bool_field(4)
+
+
+@dataclass(eq=False, repr=False)
+class GrpcJsonTranscoderRequestValidationOptions(betterproto.Message):
+    # By default, a request that cannot be mapped to any specified gRPC
+    # :ref:`services <envoy_v3_api_field_extensions.filters.http.grpc_json_transc
+    # oder.v3.GrpcJsonTranscoder.services>` will pass-through this filter. When
+    # set to true, the request will be rejected with a ``HTTP 404 Not Found``.
+    reject_unknown_method: bool = betterproto.bool_field(1)
+    # By default, a request with query parameters that cannot be mapped to the
+    # gRPC request message will pass-through this filter. When set to true, the
+    # request will be rejected with a ``HTTP 400 Bad Request``. The fields
+    # :ref:`ignore_unknown_query_parameters <envoy_v3_api_field_extensions.filter
+    # s.http.grpc_json_transcoder.v3.GrpcJsonTranscoder.ignore_unknown_query_para
+    # meters>` and :ref:`ignored_query_parameters <envoy_v3_api_field_extensions.
+    # filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder.ignored_query_param
+    # eters>` have priority over this strict validation behavior.
+    reject_unknown_query_parameters: bool = betterproto.bool_field(2)

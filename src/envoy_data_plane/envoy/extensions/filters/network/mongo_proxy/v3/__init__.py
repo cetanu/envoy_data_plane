@@ -2,6 +2,7 @@
 # sources: envoy/extensions/filters/network/mongo_proxy/v3/mongo_proxy.proto
 # plugin: python-betterproto
 from dataclasses import dataclass
+from typing import List
 
 import betterproto
 from betterproto.grpc.grpclib_server import ServiceBase
@@ -9,6 +10,8 @@ from betterproto.grpc.grpclib_server import ServiceBase
 
 @dataclass(eq=False, repr=False)
 class MongoProxy(betterproto.Message):
+    """[#next-free-field: 6]"""
+
     # The human readable prefix to use when emitting :ref:`statistics
     # <config_network_filters_mongo_proxy_stats>`.
     stat_prefix: str = betterproto.string_field(1)
@@ -25,6 +28,11 @@ class MongoProxy(betterproto.Message):
     # <config_network_filters_mongo_proxy_dynamic_metadata>` should be emitted.
     # Defaults to false.
     emit_dynamic_metadata: bool = betterproto.bool_field(4)
+    # List of commands to emit metrics for. Defaults to "delete", "insert", and
+    # "update". Note that metrics will not be emitted for "find" commands, since
+    # those are considered queries, and metrics for those are emitted under a
+    # dedicated "query" namespace.
+    commands: List[str] = betterproto.string_field(5)
 
 
 from ....common.fault import v3 as ___common_fault_v3__

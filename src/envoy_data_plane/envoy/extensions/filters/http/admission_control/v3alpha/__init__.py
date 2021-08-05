@@ -11,7 +11,7 @@ from betterproto.grpc.grpclib_server import ServiceBase
 
 @dataclass(eq=False, repr=False)
 class AdmissionControl(betterproto.Message):
-    """[#next-free-field: 6]"""
+    """[#next-free-field: 8]"""
 
     # If set to false, the admission control filter will operate as a pass-
     # through filter. If the message is unspecified, the filter will be enabled.
@@ -37,6 +37,15 @@ class AdmissionControl(betterproto.Message):
     # increase. Any success rate above the threshold results in a rejection
     # probability of 0. Defaults to 95%.
     sr_threshold: "_____config_core_v3__.RuntimePercent" = betterproto.message_field(5)
+    # If the average RPS of the sampling window is below this threshold, the
+    # request will not be rejected, even if the success rate is lower than
+    # sr_threshold. Defaults to 0.
+    rps_threshold: "_____config_core_v3__.RuntimeUInt32" = betterproto.message_field(6)
+    # The probability of rejection will never exceed this value, even if the
+    # failure rate is rising. Defaults to 80%.
+    max_rejection_probability: "_____config_core_v3__.RuntimePercent" = (
+        betterproto.message_field(7)
+    )
 
 
 @dataclass(eq=False, repr=False)

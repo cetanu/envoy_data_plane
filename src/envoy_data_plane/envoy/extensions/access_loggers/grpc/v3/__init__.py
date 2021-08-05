@@ -13,24 +13,24 @@ from betterproto.grpc.grpclib_server import ServiceBase
 class HttpGrpcAccessLogConfig(betterproto.Message):
     """
     Configuration for the built-in *envoy.access_loggers.http_grpc*
-    :ref:`AccessLog <envoy_api_msg_config.accesslog.v3.AccessLog>`. This
-    configuration will populate :ref:`StreamAccessLogsMessage.http_logs
-    <envoy_api_field_service.accesslog.v3.StreamAccessLogsMessage.http_logs>`.
+    :ref:`AccessLog <envoy_v3_api_msg_config.accesslog.v3.AccessLog>`. This
+    configuration will populate :ref:`StreamAccessLogsMessage.http_logs <envoy_
+    v3_api_field_service.accesslog.v3.StreamAccessLogsMessage.http_logs>`.
     [#extension: envoy.access_loggers.http_grpc]
     """
 
     common_config: "CommonGrpcAccessLogConfig" = betterproto.message_field(1)
     # Additional request headers to log in
-    # :ref:`HTTPRequestProperties.request_headers
-    # <envoy_api_field_data.accesslog.v3.HTTPRequestProperties.request_headers>`.
+    # :ref:`HTTPRequestProperties.request_headers <envoy_v3_api_field_data.access
+    # log.v3.HTTPRequestProperties.request_headers>`.
     additional_request_headers_to_log: List[str] = betterproto.string_field(2)
     # Additional response headers to log in
-    # :ref:`HTTPResponseProperties.response_headers <envoy_api_field_data.accessl
-    # og.v3.HTTPResponseProperties.response_headers>`.
+    # :ref:`HTTPResponseProperties.response_headers <envoy_v3_api_field_data.acce
+    # sslog.v3.HTTPResponseProperties.response_headers>`.
     additional_response_headers_to_log: List[str] = betterproto.string_field(3)
     # Additional response trailers to log in
-    # :ref:`HTTPResponseProperties.response_trailers <envoy_api_field_data.access
-    # log.v3.HTTPResponseProperties.response_trailers>`.
+    # :ref:`HTTPResponseProperties.response_trailers <envoy_v3_api_field_data.acc
+    # esslog.v3.HTTPResponseProperties.response_trailers>`.
     additional_response_trailers_to_log: List[str] = betterproto.string_field(4)
 
 
@@ -50,10 +50,10 @@ class CommonGrpcAccessLogConfig(betterproto.Message):
     """Common configuration for gRPC access logs. [#next-free-field: 7]"""
 
     # The friendly name of the access log to be returned in
-    # :ref:`StreamAccessLogsMessage.Identifier
-    # <envoy_api_msg_service.accesslog.v3.StreamAccessLogsMessage.Identifier>`.
-    # This allows the access log server to differentiate between different access
-    # logs coming from the same Envoy.
+    # :ref:`StreamAccessLogsMessage.Identifier <envoy_v3_api_msg_service.accesslo
+    # g.v3.StreamAccessLogsMessage.Identifier>`. This allows the access log
+    # server to differentiate between different access logs coming from the same
+    # Envoy.
     log_name: str = betterproto.string_field(1)
     # The gRPC service for the access log service.
     grpc_service: "____config_core_v3__.GrpcService" = betterproto.message_field(2)
@@ -71,8 +71,8 @@ class CommonGrpcAccessLogConfig(betterproto.Message):
     buffer_size_bytes: Optional[int] = betterproto.message_field(
         4, wraps=betterproto.TYPE_UINT32
     )
-    # Additional filter state objects to log in :ref:`filter_state_objects
-    # <envoy_api_field_data.accesslog.v3.AccessLogCommon.filter_state_objects>`.
+    # Additional filter state objects to log in :ref:`filter_state_objects <envoy
+    # _v3_api_field_data.accesslog.v3.AccessLogCommon.filter_state_objects>`.
     # Logger will call `FilterState::Object::serializeAsProto` to serialize the
     # filter state object.
     filter_state_objects_to_log: List[str] = betterproto.string_field(5)

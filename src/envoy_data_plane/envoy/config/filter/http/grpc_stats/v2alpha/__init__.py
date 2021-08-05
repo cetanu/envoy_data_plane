@@ -31,11 +31,10 @@ class FilterConfig(betterproto.Message):
     # unbounded growth in the number of stats in   Envoy, using unbounded memory
     # and potentially slowing down stats pipelines. .. attention::   If neither
     # `individual_method_stats_allowlist` nor `stats_for_all_methods` is set, the
-    # behavior will default to `stats_for_all_methods=true`. This default value
-    # is deprecated,   and in a future release, if neither field is set, it will
-    # default to   `stats_for_all_methods=false` in order to be safe by default.
-    # This behavior can be   controlled with runtime override   `envoy.deprecated
-    # _features.grpc_stats_filter_enable_stats_for_all_methods_by_default`.
+    # behavior will default to `stats_for_all_methods=false`. This default value
+    # is changed due   to the previous value being deprecated. This behavior can
+    # be changed with runtime override   `envoy.deprecated_features.grpc_stats_fi
+    # lter_enable_stats_for_all_methods_by_default`.
     stats_for_all_methods: Optional[bool] = betterproto.message_field(
         3, wraps=betterproto.TYPE_BOOL, group="per_method_stat_specifier"
     )

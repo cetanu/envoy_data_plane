@@ -45,8 +45,8 @@ class RedisProxy(betterproto.Message):
     # the following prefixes would be sent to: * ``get abc:users`` would retrieve
     # the key 'abc:users' from cluster_b. * ``get ab:users`` would retrieve the
     # key 'ab:users' from cluster_a. * ``get z:users`` would return a
-    # NoUpstreamHost error. A :ref:`catch-all   route<envoy_api_field_extensions.
-    # filters.network.redis_proxy.v3.RedisProxy.PrefixRoutes.catch_all_route>`
+    # NoUpstreamHost error. A :ref:`catch-all   route<envoy_v3_api_field_extensio
+    # ns.filters.network.redis_proxy.v3.RedisProxy.PrefixRoutes.catch_all_route>`
     # would have retrieved the key from that cluster instead. See the
     # :ref:`configuration section <arch_overview_redis_configuration>` of the
     # architecture overview for recommendations on configuring the backing
@@ -232,8 +232,8 @@ class RedisProxyRedisFault(betterproto.Message):
 class RedisProtocolOptions(betterproto.Message):
     """
     RedisProtocolOptions specifies Redis upstream protocol options. This object
-    is used in :ref:`typed_extension_protocol_options<envoy_api_field_config.cl
-    uster.v3.Cluster.typed_extension_protocol_options>`, keyed by the name
+    is used in :ref:`typed_extension_protocol_options<envoy_v3_api_field_config
+    .cluster.v3.Cluster.typed_extension_protocol_options>`, keyed by the name
     `envoy.filters.network.redis_proxy`.
     """
 

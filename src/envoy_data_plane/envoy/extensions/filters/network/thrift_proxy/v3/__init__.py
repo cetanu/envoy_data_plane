@@ -71,15 +71,15 @@ class RouteMatch(betterproto.Message):
     # name prefix. As a special case, an empty string matches any service name.
     # Only relevant when service multiplexing.
     service_name: str = betterproto.string_field(2, group="match_specifier")
-    # Inverts whatever matching is done in the :ref:`method_name <envoy_api_field
-    # _extensions.filters.network.thrift_proxy.v3.RouteMatch.method_name>` or
-    # :ref:`service_name <envoy_api_field_extensions.filters.network.thrift_proxy
-    # .v3.RouteMatch.service_name>` fields. Cannot be combined with wildcard
+    # Inverts whatever matching is done in the :ref:`method_name <envoy_v3_api_fi
+    # eld_extensions.filters.network.thrift_proxy.v3.RouteMatch.method_name>` or
+    # :ref:`service_name <envoy_v3_api_field_extensions.filters.network.thrift_pr
+    # oxy.v3.RouteMatch.service_name>` fields. Cannot be combined with wildcard
     # matching as that would result in routes never being matched. .. note::
     # This does not invert matching done as part of the :ref:`headers field   <en
-    # voy_api_field_extensions.filters.network.thrift_proxy.v3.RouteMatch.headers
-    # >` field. To   invert header matching, see :ref:`invert_match
-    # <envoy_api_field_config.route.v3.HeaderMatcher.invert_match>`.
+    # voy_v3_api_field_extensions.filters.network.thrift_proxy.v3.RouteMatch.head
+    # ers>` field. To   invert header matching, see :ref:`invert_match
+    # <envoy_v3_api_field_config.route.v3.HeaderMatcher.invert_match>`.
     invert: bool = betterproto.bool_field(3)
     # Specifies a set of headers that the route should match on. The router will
     # check the request’s headers against all the specified headers in the route
@@ -112,9 +112,9 @@ class RouteAction(betterproto.Message):
     # Optional endpoint metadata match criteria used by the subset load balancer.
     # Only endpoints in the upstream cluster with metadata matching what is set
     # in this field will be considered. Note that this will be merged with what's
-    # provided in :ref:`WeightedCluster.metadata_match <envoy_api_field_extension
-    # s.filters.network.thrift_proxy.v3.WeightedCluster.ClusterWeight.metadata_ma
-    # tch>`, with values there taking precedence. Keys and values should be
+    # provided in :ref:`WeightedCluster.metadata_match <envoy_v3_api_field_extens
+    # ions.filters.network.thrift_proxy.v3.WeightedCluster.ClusterWeight.metadata
+    # _match>`, with values there taking precedence. Keys and values should be
     # provided under the "envoy.lb" metadata key.
     metadata_match: "_____config_core_v3__.Metadata" = betterproto.message_field(3)
     # Specifies a set of rate limit configurations that could be applied to the
@@ -149,8 +149,8 @@ class WeightedClusterClusterWeight(betterproto.Message):
     # Optional endpoint metadata match criteria used by the subset load balancer.
     # Only endpoints in the upstream cluster with metadata matching what is set
     # in this field, combined with what's provided in :ref:`RouteAction's
-    # metadata_match <envoy_api_field_extensions.filters.network.thrift_proxy.v3.
-    # RouteAction.metadata_match>`, will be considered. Values here will take
+    # metadata_match <envoy_v3_api_field_extensions.filters.network.thrift_proxy.
+    # v3.RouteAction.metadata_match>`, will be considered. Values here will take
     # precedence. Keys and values should be provided under the "envoy.lb"
     # metadata key.
     metadata_match: "_____config_core_v3__.Metadata" = betterproto.message_field(3)
@@ -158,15 +158,15 @@ class WeightedClusterClusterWeight(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class ThriftProxy(betterproto.Message):
-    """[#next-free-field: 6]"""
+    """[#next-free-field: 8]"""
 
     # Supplies the type of transport that the Thrift proxy should use. Defaults
-    # to :ref:`AUTO_TRANSPORT<envoy_api_enum_value_extensions.filters.network.thr
-    # ift_proxy.v3.TransportType.AUTO_TRANSPORT>`.
+    # to :ref:`AUTO_TRANSPORT<envoy_v3_api_enum_value_extensions.filters.network.
+    # thrift_proxy.v3.TransportType.AUTO_TRANSPORT>`.
     transport: "TransportType" = betterproto.enum_field(2)
     # Supplies the type of protocol that the Thrift proxy should use. Defaults to
-    # :ref:`AUTO_PROTOCOL<envoy_api_enum_value_extensions.filters.network.thrift_
-    # proxy.v3.ProtocolType.AUTO_PROTOCOL>`.
+    # :ref:`AUTO_PROTOCOL<envoy_v3_api_enum_value_extensions.filters.network.thri
+    # ft_proxy.v3.ProtocolType.AUTO_PROTOCOL>`.
     protocol: "ProtocolType" = betterproto.enum_field(3)
     # The human readable prefix to use when emitting statistics.
     stat_prefix: str = betterproto.string_field(1)
@@ -177,8 +177,20 @@ class ThriftProxy(betterproto.Message):
     # requests made to the Thrift proxy. Order matters as the filters are
     # processed sequentially. For backwards compatibility, if no thrift_filters
     # are specified, a default Thrift router filter
-    # (`envoy.filters.thrift.router`) is used.
+    # (`envoy.filters.thrift.router`) is used. [#extension-category:
+    # envoy.thrift_proxy.filters]
     thrift_filters: List["ThriftFilter"] = betterproto.message_field(5)
+    # If set to true, Envoy will try to skip decode data after metadata in the
+    # Thrift message. This mode will only work if the upstream and downstream
+    # protocols are the same and the transport is the same, the transport type is
+    # framed and the protocol is not Twitter. Otherwise Envoy will fallback to
+    # decode the data.
+    payload_passthrough: bool = betterproto.bool_field(6)
+    # Optional maximum requests for a single downstream connection. If not
+    # specified, there is no limit.
+    max_requests_per_connection: Optional[int] = betterproto.message_field(
+        7, wraps=betterproto.TYPE_UINT32
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -200,21 +212,21 @@ class ThriftFilter(betterproto.Message):
 class ThriftProtocolOptions(betterproto.Message):
     """
     ThriftProtocolOptions specifies Thrift upstream protocol options. This
-    object is used in in :ref:`typed_extension_protocol_options<envoy_api_field
-    _config.cluster.v3.Cluster.typed_extension_protocol_options>`, keyed by the
-    name `envoy.filters.network.thrift_proxy`.
+    object is used in in :ref:`typed_extension_protocol_options<envoy_v3_api_fi
+    eld_config.cluster.v3.Cluster.typed_extension_protocol_options>`, keyed by
+    the name `envoy.filters.network.thrift_proxy`.
     """
 
     # Supplies the type of transport that the Thrift proxy should use for
-    # upstream connections. Selecting :ref:`AUTO_TRANSPORT<envoy_api_enum_value_e
-    # xtensions.filters.network.thrift_proxy.v3.TransportType.AUTO_TRANSPORT>`,
-    # which is the default, causes the proxy to use the same transport as the
+    # upstream connections. Selecting :ref:`AUTO_TRANSPORT<envoy_v3_api_enum_valu
+    # e_extensions.filters.network.thrift_proxy.v3.TransportType.AUTO_TRANSPORT>`
+    # , which is the default, causes the proxy to use the same transport as the
     # downstream connection.
     transport: "TransportType" = betterproto.enum_field(1)
     # Supplies the type of protocol that the Thrift proxy should use for upstream
-    # connections. Selecting :ref:`AUTO_PROTOCOL<envoy_api_enum_value_extensions.
-    # filters.network.thrift_proxy.v3.ProtocolType.AUTO_PROTOCOL>`, which is the
-    # default, causes the proxy to use the same protocol as the downstream
+    # connections. Selecting :ref:`AUTO_PROTOCOL<envoy_v3_api_enum_value_extensio
+    # ns.filters.network.thrift_proxy.v3.ProtocolType.AUTO_PROTOCOL>`, which is
+    # the default, causes the proxy to use the same protocol as the downstream
     # connection.
     protocol: "ProtocolType" = betterproto.enum_field(2)
 

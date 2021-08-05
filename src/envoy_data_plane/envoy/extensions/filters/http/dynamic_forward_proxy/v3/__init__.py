@@ -17,8 +17,8 @@ class FilterConfig(betterproto.Message):
 
     # The DNS cache configuration that the filter will attach to. Note this
     # configuration must match that of associated :ref:`dynamic forward proxy
-    # cluster configuration <envoy_api_field_extensions.clusters.dynamic_forward_
-    # proxy.v3.ClusterConfig.dns_cache_config>`.
+    # cluster configuration <envoy_v3_api_field_extensions.clusters.dynamic_forwa
+    # rd_proxy.v3.ClusterConfig.dns_cache_config>`.
     dns_cache_config: "____common_dynamic_forward_proxy_v3__.DnsCacheConfig" = (
         betterproto.message_field(1)
     )
@@ -33,10 +33,10 @@ class PerRouteConfig(betterproto.Message):
     # no rewrite will happen. Note: this rewrite affects both DNS lookup and host
     # header forwarding. However, this option shouldn't be used with :ref:`HCM
     # host rewrite
-    # <envoy_api_field_config.route.v3.RouteAction.host_rewrite_literal>` given
-    # that the value set here would be used for DNS lookups whereas the value set
-    # in the HCM would be used for host header forwarding which is not the
-    # desired outcome.
+    # <envoy_v3_api_field_config.route.v3.RouteAction.host_rewrite_literal>`
+    # given that the value set here would be used for DNS lookups whereas the
+    # value set in the HCM would be used for host header forwarding which is not
+    # the desired outcome.
     host_rewrite_literal: str = betterproto.string_field(
         1, group="host_rewrite_specifier"
     )
@@ -45,10 +45,11 @@ class PerRouteConfig(betterproto.Message):
     # will be used and no rewrite will happen. Note: this rewrite affects both
     # DNS lookup and host header forwarding. However, this option shouldn't be
     # used with :ref:`HCM host rewrite header
-    # <envoy_api_field_config.route.v3.RouteAction.auto_host_rewrite>` given that
-    # the value set here would be used for DNS lookups whereas the value set in
-    # the HCM would be used for host header forwarding which is not the desired
-    # outcome.
+    # <envoy_v3_api_field_config.route.v3.RouteAction.auto_host_rewrite>` given
+    # that the value set here would be used for DNS lookups whereas the value set
+    # in the HCM would be used for host header forwarding which is not the
+    # desired outcome. .. note::   If the header appears multiple times only the
+    # first value is used.
     host_rewrite_header: str = betterproto.string_field(
         2, group="host_rewrite_specifier"
     )

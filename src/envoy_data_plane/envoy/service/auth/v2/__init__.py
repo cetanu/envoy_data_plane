@@ -122,7 +122,9 @@ class AttributeContextHttpRequest(betterproto.Message):
     path: str = betterproto.string_field(4)
     # The HTTP request `Host` or 'Authority` header value.
     host: str = betterproto.string_field(5)
-    # The HTTP URL scheme, such as `http` and `https`.
+    # The HTTP URL scheme, such as `http` and `https`. This is set for HTTP/2
+    # requests only. For HTTP/1.1, use "x-forwarded-for" header value to lookup
+    # the scheme of the request.
     scheme: str = betterproto.string_field(6)
     # This field is always empty, and exists for compatibility reasons. The HTTP
     # URL query is included in `path` field.

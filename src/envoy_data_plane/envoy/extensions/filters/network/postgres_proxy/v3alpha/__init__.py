@@ -19,3 +19,15 @@ class PostgresProxy(betterproto.Message):
     enable_sql_parsing: Optional[bool] = betterproto.message_field(
         2, wraps=betterproto.TYPE_BOOL
     )
+    # Controls whether to terminate SSL session initiated by a client. If the
+    # value is false, the Postgres proxy filter will not try to terminate SSL
+    # session, but will pass all the packets to the upstream server. If the value
+    # is true, the Postgres proxy filter will try to terminate SSL session. In
+    # order to do that, the filter chain must use :ref:`starttls transport socket
+    # <envoy_v3_api_msg_extensions.transport_sockets.starttls.v3.StartTlsConfig>`
+    # . If the filter does not manage to terminate the SSL session, it will close
+    # the connection from the client. Refer to official documentation for details
+    # `SSL Session Encryption Message Flow
+    # <https://www.postgresql.org/docs/current/protocol-
+    # flow.html#id-1.10.5.7.11>`_.
+    terminate_ssl: bool = betterproto.bool_field(3)

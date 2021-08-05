@@ -66,4 +66,12 @@ class RateLimitDescriptorRateLimitOverride(betterproto.Message):
     unit: "____type_v3__.RateLimitUnit" = betterproto.enum_field(2)
 
 
+@dataclass(eq=False, repr=False)
+class LocalRateLimitDescriptor(betterproto.Message):
+    # Descriptor entries.
+    entries: List["RateLimitDescriptorEntry"] = betterproto.message_field(1)
+    # Token Bucket algorithm for local ratelimiting.
+    token_bucket: "____type_v3__.TokenBucket" = betterproto.message_field(2)
+
+
 from .....type import v3 as ____type_v3__

@@ -33,8 +33,8 @@ class LoadStatsResponse(betterproto.Message):
     clusters: List[str] = betterproto.string_field(1)
     # If true, the client should send all clusters it knows about. Only clients
     # that advertise the "envoy.lrs.supports_send_all_clusters" capability in
-    # their :ref:`client_features<envoy_api_field_config.core.v4alpha.Node.client
-    # _features>` field will honor this field.
+    # their :ref:`client_features<envoy_v3_api_field_config.core.v3.Node.client_f
+    # eatures>` field will honor this field.
     send_all_clusters: bool = betterproto.bool_field(4)
     # The minimum interval of time to collect stats over. This is only a minimum
     # for two reasons: 1. There may be some delay from when the timer fires until

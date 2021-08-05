@@ -12,7 +12,7 @@ from betterproto.grpc.grpclib_server import ServiceBase
 class FileAccessLog(betterproto.Message):
     """
     Custom configuration for an :ref:`AccessLog
-    <envoy_api_msg_config.accesslog.v3.AccessLog>` that writes log entries
+    <envoy_v3_api_msg_config.accesslog.v3.AccessLog>` that writes log entries
     directly to a file. Configures the built-in *envoy.access_loggers.file*
     AccessLog. [#next-free-field: 6]
     """

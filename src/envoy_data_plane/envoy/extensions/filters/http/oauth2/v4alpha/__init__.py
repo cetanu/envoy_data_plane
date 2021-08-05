@@ -26,7 +26,7 @@ class OAuth2Credentials(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class OAuth2Config(betterproto.Message):
-    """OAuth config [#next-free-field: 9]"""
+    """OAuth config [#next-free-field: 11]"""
 
     # Endpoint on the authorization server to retrieve the access token from.
     token_endpoint: "_____config_core_v4_alpha__.HttpUri" = betterproto.message_field(1)
@@ -57,6 +57,13 @@ class OAuth2Config(betterproto.Message):
     pass_through_matcher: List[
         "_____config_route_v4_alpha__.HeaderMatcher"
     ] = betterproto.message_field(8)
+    # Optional list of OAuth scopes to be claimed in the authorization request.
+    # If not specified, defaults to "user" scope. OAuth RFC
+    # https://tools.ietf.org/html/rfc6749#section-3.3
+    auth_scopes: List[str] = betterproto.string_field(9)
+    # Optional resource parameter for authorization request RFC:
+    # https://tools.ietf.org/html/rfc8707
+    resources: List[str] = betterproto.string_field(10)
 
 
 @dataclass(eq=False, repr=False)

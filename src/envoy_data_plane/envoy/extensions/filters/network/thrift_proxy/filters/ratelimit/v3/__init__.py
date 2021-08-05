@@ -15,8 +15,8 @@ class RateLimit(betterproto.Message):
     # The rate limit domain to use in the rate limit service request.
     domain: str = betterproto.string_field(1)
     # Specifies the rate limit configuration stage. Each configured rate limit
-    # filter performs a rate limit check using descriptors configured in the
-    # :ref:`envoy_api_msg_extensions.filters.network.thrift_proxy.v3.RouteAction`
+    # filter performs a rate limit check using descriptors configured in the :ref
+    # :`envoy_v3_api_msg_extensions.filters.network.thrift_proxy.v3.RouteAction`
     # for the request. Only those entries with a matching stage number are used
     # for a given filter. If not set, the default stage number is 0. .. note::
     # The filter supports a range of 0 - 10 inclusively for stage numbers.

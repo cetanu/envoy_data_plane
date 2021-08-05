@@ -29,7 +29,14 @@ class RouteConfiguration(betterproto.Message):
     # The name of the route configuration. Reserved for future use in
     # asynchronous route discovery.
     name: str = betterproto.string_field(1)
-    # The interface name of the service.
+    # The interface name of the service. Wildcard interface are supported in the
+    # suffix or prefix form. e.g. ``*.methods.add`` will match
+    # ``com.dev.methods.add``, ``com.prod.methods.add``, etc.
+    # ``com.dev.methods.*`` will match ``com.dev.methods.add``,
+    # ``com.dev.methods.update``, etc. Special wildcard ``*`` matching any
+    # interface. .. note::  The wildcard will not match the empty string.  e.g.
+    # ``*.methods.add`` will match ``com.dev.methods.add`` but not
+    # ``.methods.add``.
     interface: str = betterproto.string_field(2)
     # Which group does the interface belong to.
     group: str = betterproto.string_field(3)

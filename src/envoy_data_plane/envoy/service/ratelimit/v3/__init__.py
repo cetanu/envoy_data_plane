@@ -2,7 +2,7 @@
 # sources: envoy/service/ratelimit/v3/rls.proto
 # plugin: python-betterproto
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 import betterproto
@@ -55,7 +55,7 @@ class RateLimitRequest(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class RateLimitResponse(betterproto.Message):
-    """A response from a ShouldRateLimit call."""
+    """A response from a ShouldRateLimit call. [#next-free-field: 7]"""
 
     # The overall response code which takes into account all of the descriptors
     # that were passed in the RateLimitRequest message.
@@ -73,6 +73,21 @@ class RateLimitResponse(betterproto.Message):
     request_headers_to_add: List[
         "___config_core_v3__.HeaderValue"
     ] = betterproto.message_field(4)
+    # A response body to send to the downstream client when the response code is
+    # not OK.
+    raw_body: bytes = betterproto.bytes_field(5)
+    # Optional response metadata that will be emitted as dynamic metadata to be
+    # consumed by the next filter. This metadata lives in a namespace specified
+    # by the canonical name of extension filter that requires it: -
+    # :ref:`envoy.filters.http.ratelimit
+    # <config_http_filters_ratelimit_dynamic_metadata>` for HTTP filter. -
+    # :ref:`envoy.filters.network.ratelimit
+    # <config_network_filters_ratelimit_dynamic_metadata>` for network filter. -
+    # :ref:`envoy.filters.thrift.rate_limit
+    # <config_thrift_filters_rate_limit_dynamic_metadata>` for Thrift filter.
+    dynamic_metadata: "betterproto_lib_google_protobuf.Struct" = (
+        betterproto.message_field(6)
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -91,7 +106,23 @@ class RateLimitResponseRateLimit(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class RateLimitResponseQuota(betterproto.Message):
+    """
+    Cacheable quota for responses, see documentation for the :ref:`quota <envoy
+    _v3_api_field_service.ratelimit.v3.RateLimitResponse.DescriptorStatus.quota
+    >` field. [#not-implemented-hide:]
+    """
+
+    # Number of matching requests granted in quota. Must be 1 or more.
+    requests: int = betterproto.uint32_field(1)
+    # Point in time at which the quota expires.
+    valid_until: datetime = betterproto.message_field(2, group="expiration_specifier")
+
+
+@dataclass(eq=False, repr=False)
 class RateLimitResponseDescriptorStatus(betterproto.Message):
+    """[#next-free-field: 6]"""
+
     # The response code for an individual descriptor.
     code: "RateLimitResponseCode" = betterproto.enum_field(1)
     # The current limit as configured by the server. Useful for debugging, etc.
@@ -100,6 +131,35 @@ class RateLimitResponseDescriptorStatus(betterproto.Message):
     limit_remaining: int = betterproto.uint32_field(3)
     # Duration until reset of the current limit window.
     duration_until_reset: timedelta = betterproto.message_field(4)
+    # Quota granted for the descriptor. This is a certain number of requests over
+    # a period of time. The client may cache this result and apply the effective
+    # RateLimitResponse to future matching requests containing a matching
+    # descriptor without querying rate limit service. Quota is available for a
+    # request if its descriptor set has cached quota available for all
+    # descriptors. If quota is available, a RLS request will not be made and the
+    # quota will be reduced by 1 for all matching descriptors. If there is not
+    # sufficient quota, there are three cases: 1. A cached entry exists for a RLS
+    # descriptor that is out-of-quota, but not expired.    In this case, the
+    # request will be treated as OVER_LIMIT. 2. Some RLS descriptors have a
+    # cached entry that has valid quota but some RLS descriptors    have no
+    # cached entry. This will trigger a new RLS request.    When the result is
+    # returned, a single unit will be consumed from the quota for all    matching
+    # descriptors.    If the server did not provide a quota, such as the quota
+    # message is empty for some of    the descriptors, then the request admission
+    # is determined by the    :ref:`overall_code
+    # <envoy_v3_api_field_service.ratelimit.v3.RateLimitResponse.overall_code>`.
+    # 3. All RLS descriptors lack a cached entry, this will trigger a new RLS
+    # request,    When the result is returned, a single unit will be consumed
+    # from the quota for all    matching descriptors.    If the server did not
+    # provide a quota, such as the quota message is empty for some of    the
+    # descriptors, then the request admission is determined by the
+    # :ref:`overall_code
+    # <envoy_v3_api_field_service.ratelimit.v3.RateLimitResponse.overall_code>`.
+    # When quota expires due to timeout, a new RLS request will also be made. The
+    # implementation may choose to preemptively query the rate limit server for
+    # more quota on or before expiration or before the available quota runs out.
+    # [#not-implemented-hide:]
+    quota: "RateLimitResponseQuota" = betterproto.message_field(5)
 
 
 class RateLimitServiceStub(betterproto.ServiceStub):
@@ -163,3 +223,4 @@ class RateLimitServiceBase(ServiceBase):
 
 from ....config.core import v3 as ___config_core_v3__
 from ....extensions.common.ratelimit import v3 as ___extensions_common_ratelimit_v3__
+import betterproto.lib.google.protobuf as betterproto_lib_google_protobuf

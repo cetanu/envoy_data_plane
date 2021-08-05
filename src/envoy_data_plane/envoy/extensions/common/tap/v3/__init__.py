@@ -18,26 +18,6 @@ class CommonExtensionConfig(betterproto.Message):
     static_config: "____config_tap_v3__.TapConfig" = betterproto.message_field(
         2, group="config_type"
     )
-    # [#not-implemented-hide:] Configuration to use for TapDS updates for the
-    # filter.
-    tapds_config: "CommonExtensionConfigTapDsConfig" = betterproto.message_field(
-        3, group="config_type"
-    )
-
-
-@dataclass(eq=False, repr=False)
-class CommonExtensionConfigTapDsConfig(betterproto.Message):
-    """[#not-implemented-hide:]"""
-
-    # Configuration for the source of TapDS updates for this Cluster.
-    config_source: "____config_core_v3__.ConfigSource" = betterproto.message_field(1)
-    # Tap config to request from XDS server.
-    name: str = betterproto.string_field(2)
-    # Resource locator for TAP. This is mutually exclusive to *name*. [#not-
-    # implemented-hide:]
-    tap_resource_locator: "_____udpa_core_v1__.ResourceLocator" = (
-        betterproto.message_field(3)
-    )
 
 
 @dataclass(eq=False, repr=False)
@@ -53,6 +33,4 @@ class AdminConfig(betterproto.Message):
     config_id: str = betterproto.string_field(1)
 
 
-from ......udpa.core import v1 as _____udpa_core_v1__
-from .....config.core import v3 as ____config_core_v3__
 from .....config.tap import v3 as ____config_tap_v3__

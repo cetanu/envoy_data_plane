@@ -17,16 +17,20 @@ class Rbac(betterproto.Message):
     """
     RBAC network filter config. Header should not be used in rules/shadow_rules
     in RBAC network filter as this information is only available in :ref:`RBAC
-    http filter <config_http_filters_rbac>`.
+    http filter <config_http_filters_rbac>`. [#next-free-field: 6]
     """
 
     # Specify the RBAC rules to be applied globally. If absent, no enforcing RBAC
-    # policy will be applied.
+    # policy will be applied. If present and empty, DENY.
     rules: "_____config_rbac_v3__.Rbac" = betterproto.message_field(1)
     # Shadow rules are not enforced by the filter but will emit stats and logs
     # and can be used for rule testing. If absent, no shadow RBAC policy will be
     # applied.
     shadow_rules: "_____config_rbac_v3__.Rbac" = betterproto.message_field(2)
+    # If specified, shadow rules will emit stats with the given prefix. This is
+    # useful to distinguish the stat when there are more than 1 RBAC filter
+    # configured with shadow rules.
+    shadow_rules_stat_prefix: str = betterproto.string_field(5)
     # The prefix to use when emitting statistics.
     stat_prefix: str = betterproto.string_field(3)
     # RBAC enforcement strategy. By default RBAC will be enforced only once when

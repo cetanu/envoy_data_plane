@@ -47,11 +47,6 @@ class OpenCensusConfig(betterproto.Message):
     stackdriver_grpc_service: "____config_core_v4_alpha__.GrpcService" = (
         betterproto.message_field(13)
     )
-    # Enables the Zipkin exporter if set to true. The url and service name must
-    # also be set.
-    zipkin_exporter_enabled: bool = betterproto.bool_field(5)
-    # The URL to Zipkin, e.g. "http://127.0.0.1:9411/api/v2/spans"
-    zipkin_url: str = betterproto.string_field(6)
     # Enables the OpenCensus Agent exporter if set to true. The ocagent_address
     # or ocagent_grpc_service must also be set.
     ocagent_exporter_enabled: bool = betterproto.bool_field(11)

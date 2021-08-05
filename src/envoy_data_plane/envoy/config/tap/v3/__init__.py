@@ -23,19 +23,19 @@ class TapConfig(betterproto.Message):
 
     # The match configuration. If the configuration matches the data source being
     # tapped, a tap will occur, with the result written to the configured output.
-    # Exactly one of :ref:`match <envoy_api_field_config.tap.v3.TapConfig.match>`
-    # and :ref:`match_config
-    # <envoy_api_field_config.tap.v3.TapConfig.match_config>` must be set. If
+    # Exactly one of :ref:`match
+    # <envoy_v3_api_field_config.tap.v3.TapConfig.match>` and :ref:`match_config
+    # <envoy_v3_api_field_config.tap.v3.TapConfig.match_config>` must be set. If
     # both are set, the :ref:`match
-    # <envoy_api_field_config.tap.v3.TapConfig.match>` will be used.
+    # <envoy_v3_api_field_config.tap.v3.TapConfig.match>` will be used.
     match_config: "MatchPredicate" = betterproto.message_field(1)
     # The match configuration. If the configuration matches the data source being
     # tapped, a tap will occur, with the result written to the configured output.
-    # Exactly one of :ref:`match <envoy_api_field_config.tap.v3.TapConfig.match>`
-    # and :ref:`match_config
-    # <envoy_api_field_config.tap.v3.TapConfig.match_config>` must be set. If
+    # Exactly one of :ref:`match
+    # <envoy_v3_api_field_config.tap.v3.TapConfig.match>` and :ref:`match_config
+    # <envoy_v3_api_field_config.tap.v3.TapConfig.match_config>` must be set. If
     # both are set, the :ref:`match
-    # <envoy_api_field_config.tap.v3.TapConfig.match>` will be used.
+    # <envoy_v3_api_field_config.tap.v3.TapConfig.match>` will be used.
     match: "__common_matcher_v3__.MatchPredicate" = betterproto.message_field(4)
     # The tap output configuration. If a match configuration matches a data
     # source being tapped, a tap will occur and the data will be written to the
@@ -45,7 +45,7 @@ class TapConfig(betterproto.Message):
     # requests\connections for which the tap matching is enabled. When not
     # enabled, the request\connection will not be recorded. .. note::   This
     # field defaults to 100/:ref:`HUNDRED
-    # <envoy_api_enum_type.v3.FractionalPercent.DenominatorType>`.
+    # <envoy_v3_api_enum_type.v3.FractionalPercent.DenominatorType>`.
     tap_enabled: "__core_v3__.RuntimeFractionalPercent" = betterproto.message_field(3)
 
     def __post_init__(self) -> None:
@@ -155,21 +155,21 @@ class OutputConfig(betterproto.Message):
     sinks: List["OutputSink"] = betterproto.message_field(1)
     # For buffered tapping, the maximum amount of received body that will be
     # buffered prior to truncation. If truncation occurs, the :ref:`truncated
-    # <envoy_api_field_data.tap.v3.Body.truncated>` field will be set. If not
+    # <envoy_v3_api_field_data.tap.v3.Body.truncated>` field will be set. If not
     # specified, the default is 1KiB.
     max_buffered_rx_bytes: Optional[int] = betterproto.message_field(
         2, wraps=betterproto.TYPE_UINT32
     )
     # For buffered tapping, the maximum amount of transmitted body that will be
     # buffered prior to truncation. If truncation occurs, the :ref:`truncated
-    # <envoy_api_field_data.tap.v3.Body.truncated>` field will be set. If not
+    # <envoy_v3_api_field_data.tap.v3.Body.truncated>` field will be set. If not
     # specified, the default is 1KiB.
     max_buffered_tx_bytes: Optional[int] = betterproto.message_field(
         3, wraps=betterproto.TYPE_UINT32
     )
     # Indicates whether taps produce a single buffered message per tap, or
     # multiple streamed messages per tap in the emitted :ref:`TraceWrapper
-    # <envoy_api_msg_data.tap.v3.TraceWrapper>` messages. Note that streamed
+    # <envoy_v3_api_msg_data.tap.v3.TraceWrapper>` messages. Note that streamed
     # tapping does not mean that no buffering takes place. Buffering may be
     # required if data is processed before a match can be determined. See the
     # HTTP tap filter :ref:`streaming <config_http_filters_tap_streaming>`

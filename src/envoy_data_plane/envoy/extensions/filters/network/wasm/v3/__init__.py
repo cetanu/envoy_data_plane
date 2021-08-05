@@ -9,8 +9,6 @@ from betterproto.grpc.grpclib_server import ServiceBase
 
 @dataclass(eq=False, repr=False)
 class Wasm(betterproto.Message):
-    """[[#not-implemented-hide:]"""
-
     # General Plugin configuration.
     config: "____wasm_v3__.PluginConfig" = betterproto.message_field(1)
 

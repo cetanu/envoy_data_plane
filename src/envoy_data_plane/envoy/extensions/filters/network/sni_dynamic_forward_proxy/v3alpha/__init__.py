@@ -19,8 +19,8 @@ class FilterConfig(betterproto.Message):
 
     # The DNS cache configuration that the filter will attach to. Note this
     # configuration must match that of associated :ref:`dynamic forward proxy
-    # cluster configuration <envoy_api_field_extensions.clusters.dynamic_forward_
-    # proxy.v3.ClusterConfig.dns_cache_config>`.
+    # cluster configuration <envoy_v3_api_field_extensions.clusters.dynamic_forwa
+    # rd_proxy.v3.ClusterConfig.dns_cache_config>`.
     dns_cache_config: "____common_dynamic_forward_proxy_v3__.DnsCacheConfig" = (
         betterproto.message_field(1)
     )

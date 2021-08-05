@@ -10,7 +10,7 @@ from betterproto.grpc.grpclib_server import ServiceBase
 
 @dataclass(eq=False, repr=False)
 class ExtAuthz(betterproto.Message):
-    """[#next-free-field: 15]"""
+    """[#next-free-field: 16]"""
 
     # gRPC service configuration (default timeout: 200ms).
     grpc_service: "_____config_core_v3__.GrpcService" = betterproto.message_field(
@@ -51,14 +51,14 @@ class ExtAuthz(betterproto.Message):
     # Specifies a list of metadata namespaces whose values, if present, will be
     # passed to the ext_authz service as an opaque *protobuf::Struct*. For
     # example, if the *jwt_authn* filter is used and :ref:`payload_in_metadata <e
-    # nvoy_api_field_extensions.filters.http.jwt_authn.v3.JwtProvider.payload_in_
-    # metadata>` is set, then the following will pass the jwt payload to the
+    # nvoy_v3_api_field_extensions.filters.http.jwt_authn.v3.JwtProvider.payload_
+    # in_metadata>` is set, then the following will pass the jwt payload to the
     # authorization server. .. code-block:: yaml    metadata_context_namespaces:
     # - envoy.filters.http.jwt_authn
     metadata_context_namespaces: List[str] = betterproto.string_field(8)
     # Specifies if the filter is enabled. If :ref:`runtime_key
-    # <envoy_api_field_config.core.v3.RuntimeFractionalPercent.runtime_key>` is
-    # specified, Envoy will lookup the runtime key to get the percentage of
+    # <envoy_v3_api_field_config.core.v3.RuntimeFractionalPercent.runtime_key>`
+    # is specified, Envoy will lookup the runtime key to get the percentage of
     # requests to filter. If this field is not specified, the filter will be
     # enabled for all requests.
     filter_enabled: "_____config_core_v3__.RuntimeFractionalPercent" = (
@@ -71,7 +71,7 @@ class ExtAuthz(betterproto.Message):
     )
     # Specifies whether to deny the requests, when the filter is disabled. If
     # :ref:`runtime_key
-    # <envoy_api_field_config.core.v3.RuntimeFeatureFlag.runtime_key>` is
+    # <envoy_v3_api_field_config.core.v3.RuntimeFeatureFlag.runtime_key>` is
     # specified, Envoy will lookup the runtime key to determine whether to deny
     # request for filter protected path at filter disabling. If filter is
     # disabled in typed_per_filter_config for the path, requests will not be
@@ -82,8 +82,8 @@ class ExtAuthz(betterproto.Message):
     )
     # Specifies if the peer certificate is sent to the external service. When
     # this field is true, Envoy will include the peer X.509 certificate, if
-    # available, in the :ref:`certificate<envoy_api_field_service.auth.v3.Attribu
-    # teContext.Peer.certificate>`.
+    # available, in the :ref:`certificate<envoy_v3_api_field_service.auth.v3.Attr
+    # ibuteContext.Peer.certificate>`.
     include_peer_certificate: bool = betterproto.bool_field(10)
     # Optional additional prefix to use when emitting statistics. This allows to
     # distinguish emitted statistics between configured *ext_authz* filters in an
@@ -96,6 +96,12 @@ class ExtAuthz(betterproto.Message):
     # stat_prefix: blocker # This emits ext_authz.blocker.ok,
     # ext_authz.blocker.denied, etc.
     stat_prefix: str = betterproto.string_field(13)
+    # Optional labels that will be passed to :ref:`labels<envoy_v3_api_field_serv
+    # ice.auth.v3.AttributeContext.Peer.labels>` in :ref:`destination<envoy_v3_ap
+    # i_field_service.auth.v3.AttributeContext.destination>`. The labels will be
+    # read from :ref:`metadata<envoy_v3_api_msg_config.core.v3.Node>` with the
+    # specified key.
+    bootstrap_metadata_labels_key: str = betterproto.string_field(15)
 
 
 @dataclass(eq=False, repr=False)
@@ -106,8 +112,8 @@ class BufferSettings(betterproto.Message):
     # memory. Envoy will return *HTTP 413* and will *not* initiate the
     # authorization process when buffer reaches the number set in this field.
     # Note that this setting will have precedence over :ref:`failure_mode_allow <
-    # envoy_api_field_extensions.filters.http.ext_authz.v3.ExtAuthz.failure_mode_
-    # allow>`.
+    # envoy_v3_api_field_extensions.filters.http.ext_authz.v3.ExtAuthz.failure_mo
+    # de_allow>`.
     max_request_bytes: int = betterproto.uint32_field(1)
     # When this field is true, Envoy will buffer the message until
     # *max_request_bytes* is reached. The authorization request will be
@@ -131,21 +137,24 @@ class HttpService(betterproto.Message):
     Depending on the response, the filter may reject or accept the client
     request. Note that in any of these events, metadata can be added, removed
     or overridden by the filter: *On authorization request*, a list of allowed
-    request headers may be supplied. See :ref:`allowed_headers <envoy_api_field
-    _extensions.filters.http.ext_authz.v3.AuthorizationRequest.allowed_headers>
-    ` for details. Additional headers metadata may be added to the
-    authorization request. See :ref:`headers_to_add <envoy_api_field_extensions
-    .filters.http.ext_authz.v3.AuthorizationRequest.headers_to_add>` for
+    request headers may be supplied. See :ref:`allowed_headers <envoy_v3_api_fi
+    eld_extensions.filters.http.ext_authz.v3.AuthorizationRequest.allowed_heade
+    rs>` for details. Additional headers metadata may be added to the
+    authorization request. See :ref:`headers_to_add <envoy_v3_api_field_extensi
+    ons.filters.http.ext_authz.v3.AuthorizationRequest.headers_to_add>` for
     details. On authorization response status HTTP 200 OK, the filter will
     allow traffic to the upstream and additional headers metadata may be added
-    to the original client request. See :ref:`allowed_upstream_headers <envoy_a
-    pi_field_extensions.filters.http.ext_authz.v3.AuthorizationResponse.allowed
-    _upstream_headers>` for details. On other authorization response statuses,
-    the filter will not allow traffic. Additional headers metadata as well as
-    body may be added to the client's response. See
-    :ref:`allowed_client_headers <envoy_api_field_extensions.filters.http.ext_a
-    uthz.v3.AuthorizationResponse.allowed_client_headers>` for details. [#next-
-    free-field: 9]
+    to the original client request. See :ref:`allowed_upstream_headers <envoy_v
+    3_api_field_extensions.filters.http.ext_authz.v3.AuthorizationResponse.allo
+    wed_upstream_headers>` for details. Additionally, the filter may add
+    additional headers to the client's response. See
+    :ref:`allowed_client_headers_on_success <envoy_v3_api_field_extensions.filt
+    ers.http.ext_authz.v3.AuthorizationResponse.allowed_client_headers_on_succe
+    ss>` for details. On other authorization response statuses, the filter will
+    not allow traffic. Additional headers metadata as well as body may be added
+    to the client's response. See :ref:`allowed_client_headers <envoy_v3_api_fi
+    eld_extensions.filters.http.ext_authz.v3.AuthorizationResponse.allowed_clie
+    nt_headers>` for details. [#next-free-field: 9]
     """
 
     # Sets the HTTP server URI which the authorization requests must be sent to.
@@ -160,17 +169,18 @@ class HttpService(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class AuthorizationRequest(betterproto.Message):
-    # Authorization request will include the client request headers that have a
+    # Authorization request includes the client request headers that have a
     # correspondent match in the :ref:`list
-    # <envoy_api_msg_type.matcher.v3.ListStringMatcher>`. Note that in addition
-    # to the user's supplied matchers: 1. *Host*, *Method*, *Path* and *Content-
-    # Length* are automatically included to the list. 2. *Content-Length* will be
-    # set to 0 and the request to the authorization service will not have a
-    # message body. However, the authorization request can include the buffered
-    # client request body (controlled by :ref:`with_request_body <envoy_api_field
-    # _extensions.filters.http.ext_authz.v3.ExtAuthz.with_request_body>`
-    # setting), consequently the value of *Content-Length* of the authorization
-    # request reflects the size of its payload size.
+    # <envoy_v3_api_msg_type.matcher.v3.ListStringMatcher>`. .. note::   In
+    # addition to the the user's supplied matchers, ``Host``, ``Method``,
+    # ``Path``,   ``Content-Length``, and ``Authorization`` are **automatically
+    # included** to the list. .. note::   By default, ``Content-Length`` header
+    # is set to ``0`` and the request to the authorization   service has no
+    # message body. However, the authorization request *may* include the buffered
+    # client request body (controlled by :ref:`with_request_body   <envoy_v3_api_
+    # field_extensions.filters.http.ext_authz.v3.ExtAuthz.with_request_body>`
+    # setting) hence the value of its ``Content-Length`` reflects the size of its
+    # payload size.
     allowed_headers: "_____type_matcher_v3__.ListStringMatcher" = (
         betterproto.message_field(1)
     )
@@ -184,29 +194,37 @@ class AuthorizationRequest(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class AuthorizationResponse(betterproto.Message):
-    # When this :ref:`list <envoy_api_msg_type.matcher.v3.ListStringMatcher>` is
-    # set, authorization response headers that have a correspondent match will be
-    # added to the original client request. Note that coexistent headers will be
-    # overridden.
+    # When this :ref:`list <envoy_v3_api_msg_type.matcher.v3.ListStringMatcher>`
+    # is set, authorization response headers that have a correspondent match will
+    # be added to the original client request. Note that coexistent headers will
+    # be overridden.
     allowed_upstream_headers: "_____type_matcher_v3__.ListStringMatcher" = (
         betterproto.message_field(1)
     )
-    # When this :ref:`list <envoy_api_msg_type.matcher.v3.ListStringMatcher>` is
-    # set, authorization response headers that have a correspondent match will be
-    # added to the client's response. Note that coexistent headers will be
+    # When this :ref:`list <envoy_v3_api_msg_type.matcher.v3.ListStringMatcher>`
+    # is set, authorization response headers that have a correspondent match will
+    # be added to the client's response. Note that coexistent headers will be
     # appended.
     allowed_upstream_headers_to_append: "_____type_matcher_v3__.ListStringMatcher" = (
         betterproto.message_field(3)
     )
-    # When this :ref:`list <envoy_api_msg_type.matcher.v3.ListStringMatcher>`. is
-    # set, authorization response headers that have a correspondent match will be
-    # added to the client's response. Note that when this list is *not* set, all
-    # the authorization response headers, except *Authority (Host)* will be in
-    # the response to the client. When a header is included in this list, *Path*,
-    # *Status*, *Content-Length*, *WWWAuthenticate* and *Location* are
+    # When this :ref:`list <envoy_v3_api_msg_type.matcher.v3.ListStringMatcher>`.
+    # is set, authorization response headers that have a correspondent match will
+    # be added to the client's response. Note that when this list is *not* set,
+    # all the authorization response headers, except *Authority (Host)* will be
+    # in the response to the client. When a header is included in this list,
+    # *Path*, *Status*, *Content-Length*, *WWWAuthenticate* and *Location* are
     # automatically added.
     allowed_client_headers: "_____type_matcher_v3__.ListStringMatcher" = (
         betterproto.message_field(2)
+    )
+    # When this :ref:`list <envoy_v3_api_msg_type.matcher.v3.ListStringMatcher>`.
+    # is set, authorization response headers that have a correspondent match will
+    # be added to the client's response when the authorization response itself is
+    # successful, i.e. not failed or denied. When this list is *not* set, no
+    # additional headers will be added to the client's response on success.
+    allowed_client_headers_on_success: "_____type_matcher_v3__.ListStringMatcher" = (
+        betterproto.message_field(4)
     )
 
 
@@ -227,8 +245,8 @@ class CheckSettings(betterproto.Message):
     """Extra settings for the check request."""
 
     # Context extensions to set on the CheckRequest's :ref:`AttributeContext.cont
-    # ext_extensions<envoy_api_field_service.auth.v3.AttributeContext.context_ext
-    # ensions>` You can use this to provide extra context for the external
+    # ext_extensions<envoy_v3_api_field_service.auth.v3.AttributeContext.context_
+    # extensions>` You can use this to provide extra context for the external
     # authorization server on specific virtual hosts/routes. For example, adding
     # a context extension on the virtual host level can give the ext-authz server
     # information on what virtual host is used without needing to parse the host
@@ -236,13 +254,13 @@ class CheckSettings(betterproto.Message):
     # will be merged in order, and the result will be used. Merge semantics for
     # this field are such that keys from more specific configs override. ..
     # note::   These settings are only applied to a filter configured with a   :r
-    # ef:`grpc_service<envoy_api_field_extensions.filters.http.ext_authz.v3.ExtAu
-    # thz.grpc_service>`.
+    # ef:`grpc_service<envoy_v3_api_field_extensions.filters.http.ext_authz.v3.Ex
+    # tAuthz.grpc_service>`.
     context_extensions: Dict[str, str] = betterproto.map_field(
         1, betterproto.TYPE_STRING, betterproto.TYPE_STRING
     )
-    # When set to true, disable the configured :ref:`with_request_body <envoy_api
-    # _field_extensions.filters.http.ext_authz.v3.ExtAuthz.with_request_body>`
+    # When set to true, disable the configured :ref:`with_request_body <envoy_v3_
+    # api_field_extensions.filters.http.ext_authz.v3.ExtAuthz.with_request_body>`
     # for a route.
     disable_request_body_buffering: bool = betterproto.bool_field(2)
 

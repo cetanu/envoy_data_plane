@@ -563,7 +563,8 @@ class RouteAction(betterproto.Message):
     # is not found or the referenced cluster does not exist, Envoy will return a
     # 404 response. .. attention::   Internally, Envoy always uses the HTTP/2
     # *:authority* header to represent the HTTP/1   *Host* header. Thus, if
-    # attempting to match on *Host*, match on *:authority* instead.
+    # attempting to match on *Host*, match on *:authority* instead. .. note::
+    # If the header appears multiple times only the first value is used.
     cluster_header: str = betterproto.string_field(2, group="cluster_specifier")
     # Multiple upstream clusters can be specified for a given route. The request
     # is routed to one of the upstream clusters based on weights assigned to each
@@ -645,7 +646,8 @@ class RouteAction(betterproto.Message):
     # <config_http_conn_man_headers_custom_request_headers>` header. If header
     # value is empty, host header is left intact. .. attention::   Pay attention
     # to the potential security implications of using this option. Provided
-    # header   must come from trusted source.
+    # header   must come from trusted source. .. note::   If the header appears
+    # multiple times only the first value is used.
     auto_host_rewrite_header: str = betterproto.string_field(
         29, group="host_rewrite_specifier"
     )
@@ -1090,11 +1092,17 @@ class HedgePolicy(betterproto.Message):
         betterproto.message_field(2)
     )
     # Indicates that a hedged request should be sent when the per-try timeout is
-    # hit. This will only occur if the retry policy also indicates that a timed
-    # out request should be retried. Once a timed out request is retried due to
-    # per try timeout, the router filter will ensure that it is not retried again
-    # even if the returned response headers would otherwise be retried according
-    # the specified :ref:`RetryPolicy <envoy_api_msg_route.RetryPolicy>`.
+    # hit. This means that a retry will be issued without resetting the original
+    # request, leaving multiple upstream requests in flight. The first request to
+    # complete successfully will be the one returned to the caller. * At any
+    # time, a successful response (i.e. not triggering any of the retry-on
+    # conditions) would be returned to the client. * Before per-try timeout, an
+    # error response (per retry-on conditions) would be retried immediately or
+    # returned ot the client   if there are no more retries left. * After per-try
+    # timeout, an error response would be discarded, as a retry in the form of a
+    # hedged request is already in progress. Note: For this to have effect, you
+    # must have a :ref:`RetryPolicy <envoy_api_msg_route.RetryPolicy>` that
+    # retries at least one error code and specifies a maximum number of retries.
     # Defaults to false.
     hedge_on_per_try_timeout: bool = betterproto.bool_field(3)
 

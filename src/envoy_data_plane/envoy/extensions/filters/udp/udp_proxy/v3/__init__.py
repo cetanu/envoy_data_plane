@@ -11,7 +11,7 @@ from betterproto.grpc.grpclib_server import ServiceBase
 
 @dataclass(eq=False, repr=False)
 class UdpProxyConfig(betterproto.Message):
-    """Configuration for the UDP proxy filter. [#next-free-field: 6]"""
+    """Configuration for the UDP proxy filter. [#next-free-field: 7]"""
 
     # The stat prefix used when emitting UDP proxy filter stats.
     stat_prefix: str = betterproto.string_field(1)
@@ -42,6 +42,14 @@ class UdpProxyConfig(betterproto.Message):
     # set, the hash-based load balancing algorithms will select a host randomly.
     # Currently the number of hash policies is limited to 1.
     hash_policies: List["UdpProxyConfigHashPolicy"] = betterproto.message_field(5)
+    # UDP socket configuration for upstream sockets. The default for
+    # :ref:`prefer_gro
+    # <envoy_v3_api_field_config.core.v3.UdpSocketConfig.prefer_gro>` is true for
+    # upstream sockets as the assumption is datagrams will be received from a
+    # single source.
+    upstream_socket_config: "_____config_core_v3__.UdpSocketConfig" = (
+        betterproto.message_field(6)
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -53,3 +61,15 @@ class UdpProxyConfigHashPolicy(betterproto.Message):
     # The source IP will be used to compute the hash used by hash-based load
     # balancing algorithms.
     source_ip: bool = betterproto.bool_field(1, group="policy_specifier")
+    # A given key will be used to compute the hash used by hash-based load
+    # balancing algorithms. In certain cases there is a need to direct different
+    # UDP streams jointly towards the selected set of endpoints. A possible use-
+    # case is VoIP telephony, where media (RTP) and its corresponding control
+    # (RTCP) belong to the same logical session, although they travel in separate
+    # streams. To ensure that these pair of streams are load-balanced on session
+    # level (instead of individual stream level), dynamically created listeners
+    # can use the same hash key for each stream in the session.
+    key: str = betterproto.string_field(2, group="policy_specifier")
+
+
+from ......config.core import v3 as _____config_core_v3__

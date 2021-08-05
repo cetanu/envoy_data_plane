@@ -245,7 +245,7 @@ class CidrRange(betterproto.Message):
 
     # IPv4 or IPv6 address, e.g. ``192.0.0.0`` or ``2001:db8::``.
     address_prefix: str = betterproto.string_field(1)
-    # Length of prefix, e.g. 0, 32.
+    # Length of prefix, e.g. 0, 32. Defaults to 0 when unset.
     prefix_len: Optional[int] = betterproto.message_field(
         2, wraps=betterproto.TYPE_UINT32
     )
@@ -1417,8 +1417,8 @@ class Http2ProtocolOptions(betterproto.Message):
     allow_connect: bool = betterproto.bool_field(5)
     # [#not-implemented-hide:] Hiding until envoy has full metadata support.
     # Still under implementation. DO NOT USE. Allows metadata. See [metadata docs
-    # ](https://github.com/envoyproxy/envoy/blob/master/source/docs/h2_metadata.m
-    # d) for more information.
+    # ](https://github.com/envoyproxy/envoy/blob/main/source/docs/h2_metadata.md)
+    # for more information.
     allow_metadata: bool = betterproto.bool_field(6)
     # Limit the number of pending outbound downstream frames of all types (frames
     # that are waiting to be written into the socket). Exceeding this limit

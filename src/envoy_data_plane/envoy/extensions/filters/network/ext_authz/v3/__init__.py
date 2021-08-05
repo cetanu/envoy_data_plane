@@ -12,8 +12,8 @@ class ExtAuthz(betterproto.Message):
     """
     External Authorization filter calls out to an external service over the
     gRPC Authorization API defined by :ref:`CheckRequest
-    <envoy_api_msg_service.auth.v3.CheckRequest>`. A failed check will cause
-    this filter to close the TCP connection. [#next-free-field: 7]
+    <envoy_v3_api_msg_service.auth.v3.CheckRequest>`. A failed check will cause
+    this filter to close the TCP connection. [#next-free-field: 8]
     """
 
     # The prefix to use when emitting statistics.
@@ -28,8 +28,8 @@ class ExtAuthz(betterproto.Message):
     failure_mode_allow: bool = betterproto.bool_field(3)
     # Specifies if the peer certificate is sent to the external service. When
     # this field is true, Envoy will include the peer X.509 certificate, if
-    # available, in the :ref:`certificate<envoy_api_field_service.auth.v3.Attribu
-    # teContext.Peer.certificate>`.
+    # available, in the :ref:`certificate<envoy_v3_api_field_service.auth.v3.Attr
+    # ibuteContext.Peer.certificate>`.
     include_peer_certificate: bool = betterproto.bool_field(4)
     # API version for ext_authz transport protocol. This describes the ext_authz
     # gRPC endpoint and version of Check{Request,Response} used on the wire.
@@ -41,6 +41,12 @@ class ExtAuthz(betterproto.Message):
     filter_enabled_metadata: "_____type_matcher_v3__.MetadataMatcher" = (
         betterproto.message_field(6)
     )
+    # Optional labels that will be passed to :ref:`labels<envoy_v3_api_field_serv
+    # ice.auth.v3.AttributeContext.Peer.labels>` in :ref:`destination<envoy_v3_ap
+    # i_field_service.auth.v3.AttributeContext.destination>`. The labels will be
+    # read from :ref:`metadata<envoy_v3_api_msg_config.core.v3.Node>` with the
+    # specified key.
+    bootstrap_metadata_labels_key: str = betterproto.string_field(7)
 
 
 from ......config.core import v3 as _____config_core_v3__

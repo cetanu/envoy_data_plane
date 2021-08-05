@@ -19,13 +19,10 @@ class ZipkinConfigCollectorEndpointVersion(betterproto.Enum):
 class ZipkinConfig(betterproto.Message):
     """
     Configuration for the Zipkin tracer. [#extension: envoy.tracers.zipkin]
-    [#next-free-field: 6]
+    [#next-free-field: 7]
     """
 
-    # The cluster manager cluster that hosts the Zipkin collectors. Note that the
-    # Zipkin cluster must be defined in the :ref:`Bootstrap static cluster
-    # resources <envoy_api_field_config.bootstrap.v4alpha.Bootstrap.StaticResourc
-    # es.clusters>`.
+    # The cluster manager cluster that hosts the Zipkin collectors.
     collector_cluster: str = betterproto.string_field(1)
     # The API endpoint of the Zipkin service where the spans will be sent. When
     # using a standard Zipkin installation, the API endpoint is typically
@@ -45,3 +42,8 @@ class ZipkinConfig(betterproto.Message):
     collector_endpoint_version: "ZipkinConfigCollectorEndpointVersion" = (
         betterproto.enum_field(5)
     )
+    # Optional hostname to use when sending spans to the collector_cluster.
+    # Useful for collectors that require a specific hostname. Defaults to
+    # :ref:`collector_cluster
+    # <envoy_v3_api_field_config.trace.v3.ZipkinConfig.collector_cluster>` above.
+    collector_hostname: str = betterproto.string_field(6)

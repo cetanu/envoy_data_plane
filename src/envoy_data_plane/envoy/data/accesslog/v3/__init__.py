@@ -171,7 +171,7 @@ class AccessLogCommon(betterproto.Message):
 class ResponseFlags(betterproto.Message):
     """
     Flags indicating occurrences during request/response processing. [#next-
-    free-field: 24]
+    free-field: 27]
     """
 
     # Indicates local server healthcheck failed.
@@ -226,6 +226,12 @@ class ResponseFlags(betterproto.Message):
     # Indicates that request or connection exceeded the downstream connection
     # duration.
     duration_timeout: bool = betterproto.bool_field(23)
+    # Indicates there was an HTTP protocol error in the upstream response.
+    upstream_protocol_error: bool = betterproto.bool_field(24)
+    # Indicates no cluster was found for the request.
+    no_cluster_found: bool = betterproto.bool_field(25)
+    # Indicates overload manager terminated the request.
+    overload_manager: bool = betterproto.bool_field(26)
 
 
 @dataclass(eq=False, repr=False)

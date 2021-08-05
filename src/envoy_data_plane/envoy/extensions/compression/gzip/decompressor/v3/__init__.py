@@ -12,9 +12,9 @@ from betterproto.grpc.grpclib_server import ServiceBase
 class Gzip(betterproto.Message):
     # Value from 9 to 15 that represents the base two logarithmic of the
     # decompressor's window size. The decompression window size needs to be equal
-    # or larger than the compression window size. The default is 12 to match the
-    # default in the :ref:`gzip compressor <envoy_api_field_extensions.compressio
-    # n.gzip.compressor.v3.Gzip.window_bits>`. For more details about this
+    # or larger than the compression window size. The default window size is 15.
+    # This is so that the decompressor can decompress a response compressed by a
+    # compressor with any compression window size. For more details about this
     # parameter, please refer to `zlib manual
     # <https://www.zlib.net/manual.html>`_ > inflateInit2.
     window_bits: Optional[int] = betterproto.message_field(

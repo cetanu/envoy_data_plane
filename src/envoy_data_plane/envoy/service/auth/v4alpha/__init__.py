@@ -142,8 +142,8 @@ class AttributeContextHttpRequest(betterproto.Message):
     body: str = betterproto.string_field(11)
     # The HTTP request body in bytes. This is used instead of :ref:`body
     # <envoy_v3_api_field_service.auth.v3.AttributeContext.HttpRequest.body>`
-    # when :ref:`pack_as_bytes <envoy_api_field_extensions.filters.http.ext_authz
-    # .v4alpha.BufferSettings.pack_as_bytes>` is set to true.
+    # when :ref:`pack_as_bytes <envoy_v3_api_field_extensions.filters.http.ext_au
+    # thz.v3.BufferSettings.pack_as_bytes>` is set to true.
     raw_body: bytes = betterproto.bytes_field(12)
 
 
@@ -161,8 +161,10 @@ class DeniedHttpResponse(betterproto.Message):
     # code to the downstream client other than 403 (Forbidden).
     status: "___type_v3__.HttpStatus" = betterproto.message_field(1)
     # This field allows the authorization service to send HTTP response headers
-    # to the downstream client. Note that the `append` field in
-    # `HeaderValueOption` defaults to false when used in this message.
+    # to the downstream client. Note that the :ref:`append field in
+    # HeaderValueOption
+    # <envoy_v3_api_field_config.core.v3.HeaderValueOption.append>` defaults to
+    # false when used in this message.
     headers: List[
         "___config_core_v4_alpha__.HeaderValueOption"
     ] = betterproto.message_field(2)
@@ -173,16 +175,17 @@ class DeniedHttpResponse(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class OkHttpResponse(betterproto.Message):
-    """HTTP attributes for an OK response. [#next-free-field: 6]"""
+    """HTTP attributes for an OK response. [#next-free-field: 7]"""
 
     # HTTP entity headers in addition to the original request headers. This
     # allows the authorization service to append, to add or to override headers
     # from the original request before dispatching it to the upstream. Note that
-    # the `append` field in `HeaderValueOption` defaults to false when used in
-    # this message. By setting the `append` field to `true`, the filter will
-    # append the correspondent header value to the matched request header. By
-    # leaving `append` as false, the filter will either add a new header, or
-    # override an existing one if there is a match.
+    # the :ref:`append field in HeaderValueOption
+    # <envoy_v3_api_field_config.core.v3.HeaderValueOption.append>` defaults to
+    # false when used in this message. By setting the `append` field to `true`,
+    # the filter will append the correspondent header value to the matched
+    # request header. By leaving `append` as false, the filter will either add a
+    # new header, or override an existing one if there is a match.
     headers: List[
         "___config_core_v4_alpha__.HeaderValueOption"
     ] = betterproto.message_field(2)
@@ -199,6 +202,14 @@ class OkHttpResponse(betterproto.Message):
     # a comma separated list like so: ``x-envoy-auth-headers-to-remove: one-auth-
     # header, another-auth-header``.
     headers_to_remove: List[str] = betterproto.string_field(5)
+    # This field allows the authorization service to send HTTP response headers
+    # to the downstream client on success. Note that the :ref:`append field in
+    # HeaderValueOption
+    # <envoy_v3_api_field_config.core.v3.HeaderValueOption.append>` defaults to
+    # false when used in this message.
+    response_headers_to_add: List[
+        "___config_core_v4_alpha__.HeaderValueOption"
+    ] = betterproto.message_field(6)
 
 
 @dataclass(eq=False, repr=False)

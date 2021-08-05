@@ -10,7 +10,10 @@ from betterproto.grpc.grpclib_server import ServiceBase
 
 @dataclass(eq=False, repr=False)
 class CacheConfig(betterproto.Message):
-    # Config specific to the cache storage implementation.
+    """[#extension: envoy.filters.http.cache]"""
+
+    # Config specific to the cache storage implementation. [#extension-category:
+    # envoy.filters.http.cache]
     typed_config: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(1)
     # List of matching rules that defines allowed *Vary* headers. The *vary*
     # response header holds a list of header names that affect the contents of a

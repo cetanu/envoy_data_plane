@@ -13,8 +13,8 @@ class OutlierEjectionType(betterproto.Enum):
     """Type of ejection that took place"""
 
     # In case upstream host returns certain number of consecutive 5xx. If :ref:`o
-    # utlier_detection.split_external_local_origin_errors<envoy_api_field_config.
-    # cluster.v3.OutlierDetection.split_external_local_origin_errors>` is
+    # utlier_detection.split_external_local_origin_errors<envoy_v3_api_field_conf
+    # ig.cluster.v3.OutlierDetection.split_external_local_origin_errors>` is
     # *false*, all type of errors are treated as HTTP 5xx errors. See
     # :ref:`Cluster outlier detection <arch_overview_outlier_detection>`
     # documentation for details.
@@ -24,24 +24,24 @@ class OutlierEjectionType(betterproto.Enum):
     # Runs over aggregated success rate statistics from every host in cluster and
     # selects hosts for which ratio of successful replies deviates from other
     # hosts in the cluster. If :ref:`outlier_detection.split_external_local_origi
-    # n_errors<envoy_api_field_config.cluster.v3.OutlierDetection.split_external_
-    # local_origin_errors>` is *false*, all errors (externally and locally
+    # n_errors<envoy_v3_api_field_config.cluster.v3.OutlierDetection.split_extern
+    # al_local_origin_errors>` is *false*, all errors (externally and locally
     # generated) are used to calculate success rate statistics. See :ref:`Cluster
     # outlier detection <arch_overview_outlier_detection>` documentation for
     # details.
     SUCCESS_RATE = 2
     # Consecutive local origin failures: Connection failures, resets, timeouts,
     # etc This type of ejection happens only when :ref:`outlier_detection.split_e
-    # xternal_local_origin_errors<envoy_api_field_config.cluster.v3.OutlierDetect
-    # ion.split_external_local_origin_errors>` is set to *true*. See
+    # xternal_local_origin_errors<envoy_v3_api_field_config.cluster.v3.OutlierDet
+    # ection.split_external_local_origin_errors>` is set to *true*. See
     # :ref:`Cluster outlier detection <arch_overview_outlier_detection>`
     # documentation for
     CONSECUTIVE_LOCAL_ORIGIN_FAILURE = 3
     # Runs over aggregated success rate statistics for local origin failures for
     # all hosts in the cluster and selects hosts for which success rate deviates
     # from other hosts in the cluster. This type of ejection happens only when :r
-    # ef:`outlier_detection.split_external_local_origin_errors<envoy_api_field_co
-    # nfig.cluster.v3.OutlierDetection.split_external_local_origin_errors>` is
+    # ef:`outlier_detection.split_external_local_origin_errors<envoy_v3_api_field
+    # _config.cluster.v3.OutlierDetection.split_external_local_origin_errors>` is
     # set to *true*. See :ref:`Cluster outlier detection
     # <arch_overview_outlier_detection>` documentation for
     SUCCESS_RATE_LOCAL_ORIGIN = 4
@@ -76,8 +76,8 @@ class OutlierDetectionEvent(betterproto.Message):
     secs_since_last_action: Optional[int] = betterproto.message_field(
         3, wraps=betterproto.TYPE_UINT64
     )
-    # The :ref:`cluster <envoy_api_msg_config.cluster.v3.Cluster>` that owns the
-    # ejected host.
+    # The :ref:`cluster <envoy_v3_api_msg_config.cluster.v3.Cluster>` that owns
+    # the ejected host.
     cluster_name: str = betterproto.string_field(4)
     # The URL of the ejected host. E.g., ``tcp://1.2.3.4:80``.
     upstream_url: str = betterproto.string_field(5)

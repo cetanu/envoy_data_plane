@@ -45,7 +45,8 @@ class PerRouteConfig(betterproto.Message):
     # <envoy_api_field_route.RouteAction.auto_host_rewrite_header>` given that
     # the value set here would be used for DNS lookups whereas the value set in
     # the HCM would be used for host header forwarding which is not the desired
-    # outcome.
+    # outcome. .. note::   If the header appears multiple times only the first
+    # value is used.
     auto_host_rewrite_header: str = betterproto.string_field(
         2, group="host_rewrite_specifier"
     )

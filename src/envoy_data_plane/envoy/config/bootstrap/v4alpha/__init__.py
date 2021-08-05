@@ -21,20 +21,20 @@ class WatchdogWatchdogActionWatchdogEvent(betterproto.Enum):
 class Bootstrap(betterproto.Message):
     """
     Bootstrap :ref:`configuration overview <config_overview_bootstrap>`.
-    [#next-free-field: 28]
+    [#next-free-field: 31]
     """
 
     # Node identity to present to the management server and for instance
     # identification purposes (e.g. in generated headers).
     node: "__core_v4_alpha__.Node" = betterproto.message_field(1)
     # A list of :ref:`Node <envoy_v3_api_msg_config.core.v3.Node>` field names
-    # that will be included in the context parameters of the effective
-    # *UdpaResourceLocator* that is sent in a discovery request when resource
-    # locators are used for LDS/CDS. Any non-string field will have its JSON
-    # encoding set as the context parameter value, with the exception of
-    # metadata, which will be flattened (see example below). The supported field
-    # names are: - "cluster" - "id" - "locality.region" - "locality.sub_zone" -
-    # "locality.zone" - "metadata" - "user_agent_build_version.metadata" -
+    # that will be included in the context parameters of the effective xdstp://
+    # URL that is sent in a discovery request when resource locators are used for
+    # LDS/CDS. Any non-string field will have its JSON encoding set as the
+    # context parameter value, with the exception of metadata, which will be
+    # flattened (see example below). The supported field names are: - "cluster" -
+    # "id" - "locality.region" - "locality.sub_zone" - "locality.zone" -
+    # "metadata" - "user_agent_build_version.metadata" -
     # "user_agent_build_version.version" - "user_agent_name" -
     # "user_agent_version" The node context parameters act as a base layer
     # dictionary for the context parameters (i.e. more specific resource specific
@@ -53,7 +53,7 @@ class Bootstrap(betterproto.Message):
     # within the server.
     cluster_manager: "ClusterManager" = betterproto.message_field(4)
     # Health discovery service config option. (:ref:`core.ApiConfigSource
-    # <envoy_api_msg_config.core.v4alpha.ApiConfigSource>`)
+    # <envoy_v3_api_msg_config.core.v3.ApiConfigSource>`)
     hds_config: "__core_v4_alpha__.ApiConfigSource" = betterproto.message_field(14)
     # Optional file system path to search for startup flag files.
     flags_path: str = betterproto.string_field(5)
@@ -64,10 +64,16 @@ class Bootstrap(betterproto.Message):
     # Optional duration between flushes to configured stats sinks. For
     # performance reasons Envoy latches counters and only flushes counters and
     # gauges at a periodic interval. If not specified the default is 5000ms (5
-    # seconds). Duration must be at least 1ms and at most 5 min.
-    stats_flush_interval: timedelta = betterproto.message_field(7)
+    # seconds). Only one of `stats_flush_interval` or `stats_flush_on_admin` can
+    # be set. Duration must be at least 1ms and at most 5 min.
+    stats_flush_interval: timedelta = betterproto.message_field(7, group="stats_flush")
+    # Flush stats to sinks only when queried for on the admin interface. If set,
+    # a flush timer is not created. Only one of `stats_flush_on_admin` or
+    # `stats_flush_interval` can be set.
+    stats_flush_on_admin: bool = betterproto.bool_field(29, group="stats_flush")
     # Optional watchdogs configuration. This is used for specifying different
-    # watchdogs for the different subsystems.
+    # watchdogs for the different subsystems. [#extension-category:
+    # envoy.guarddog_actions]
     watchdogs: "Watchdogs" = betterproto.message_field(27)
     # Configuration for the runtime configuration provider. If not specified, a
     # “null” provider will be used which will result in all defaults being used.
@@ -79,7 +85,7 @@ class Bootstrap(betterproto.Message):
     # Enable :ref:`stats for event dispatcher <operations_performance>`, defaults
     # to false. Note that this records a value for each iteration of the event
     # loop on every thread. This should normally be minimal overhead, but when
-    # using :ref:`statsd <envoy_api_msg_config.metrics.v4alpha.StatsdSink>`, it
+    # using :ref:`statsd <envoy_v3_api_msg_config.metrics.v3.StatsdSink>`, it
     # will send each observed value over the wire individually because the statsd
     # protocol doesn't have any way to represent a histogram summary. Be aware
     # that this can be a very large volume of data.
@@ -95,28 +101,30 @@ class Bootstrap(betterproto.Message):
     # Optional proxy version which will be used to set the value of
     # :ref:`server.version statistic <server_statistics>` if specified. Envoy
     # will not process this value, it will be sent as is to :ref:`stats sinks
-    # <envoy_api_msg_config.metrics.v4alpha.StatsSink>`.
+    # <envoy_v3_api_msg_config.metrics.v3.StatsSink>`.
     stats_server_version_override: Optional[int] = betterproto.message_field(
         19, wraps=betterproto.TYPE_UINT64
     )
-    # Always use TCP queries instead of UDP queries for DNS lookups. This may be
-    # overridden on a per-cluster basis in cds_config, when :ref:`dns_resolvers
-    # <envoy_api_field_config.cluster.v4alpha.Cluster.dns_resolvers>` and
-    # :ref:`use_tcp_for_dns_lookups
-    # <envoy_api_field_config.cluster.v4alpha.Cluster.use_tcp_for_dns_lookups>`
-    # are specified. Setting this value causes failure if the
-    # ``envoy.restart_features.use_apple_api_for_dns_lookups`` runtime value is
-    # true during server startup. Apple' API only uses UDP for DNS resolution.
-    use_tcp_for_dns_lookups: bool = betterproto.bool_field(20)
+    # DNS resolution configuration which includes the underlying dns resolver
+    # addresses and options. This may be overridden on a per-cluster basis in
+    # cds_config, when :ref:`dns_resolution_config
+    # <envoy_v3_api_field_config.cluster.v3.Cluster.dns_resolution_config>` is
+    # specified.
+    dns_resolution_config: "__core_v4_alpha__.DnsResolutionConfig" = (
+        betterproto.message_field(30)
+    )
     # Specifies optional bootstrap extensions to be instantiated at startup time.
-    # Each item contains extension specific configuration.
+    # Each item contains extension specific configuration. [#extension-category:
+    # envoy.bootstrap]
     bootstrap_extensions: List[
         "__core_v4_alpha__.TypedExtensionConfig"
     ] = betterproto.message_field(21)
-    # Configuration sources that will participate in
-    # *udpa.core.v1.ResourceLocator* authority resolution. The algorithm is as
-    # follows: 1. The authority field is taken from the
-    # *udpa.core.v1.ResourceLocator*, call    this *resource_authority*. 2.
+    # Specifies optional extensions instantiated at startup time and invoked
+    # during crash time on the request that caused the crash.
+    fatal_actions: List["FatalAction"] = betterproto.message_field(28)
+    # Configuration sources that will participate in xdstp:// URL authority
+    # resolution. The algorithm is as follows: 1. The authority field is taken
+    # from the xdstp:// URL, call    this *resource_authority*. 2.
     # *resource_authority* is compared against the authorities in any peer
     # *ConfigSource*. The peer *ConfigSource* is the configuration source
     # message which would have been used unconditionally for resolution    with
@@ -130,8 +138,8 @@ class Bootstrap(betterproto.Message):
     config_sources: List["__core_v4_alpha__.ConfigSource"] = betterproto.message_field(
         22
     )
-    # Default configuration source for *udpa.core.v1.ResourceLocator* if all
-    # other resolution fails. [#not-implemented-hide:]
+    # Default configuration source for xdstp:// URLs if all other resolution
+    # fails. [#not-implemented-hide:]
     default_config_source: "__core_v4_alpha__.ConfigSource" = betterproto.message_field(
         23
     )
@@ -141,9 +149,9 @@ class Bootstrap(betterproto.Message):
     default_socket_interface: str = betterproto.string_field(24)
     # Global map of CertificateProvider instances. These instances are referred
     # to by name in the
-    # :ref:`CommonTlsContext.CertificateProviderInstance.instance_name <envoy_api
-    # _field_extensions.transport_sockets.tls.v4alpha.CommonTlsContext.Certificat
-    # eProviderInstance.instance_name>` field. [#not-implemented-hide:]
+    # :ref:`CommonTlsContext.CertificateProviderInstance.instance_name <envoy_v3_
+    # api_field_extensions.transport_sockets.tls.v3.CommonTlsContext.CertificateP
+    # roviderInstance.instance_name>` field. [#not-implemented-hide:]
     certificate_provider_instances: Dict[
         str, "__core_v4_alpha__.TypedExtensionConfig"
     ] = betterproto.map_field(25, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE)
@@ -151,18 +159,18 @@ class Bootstrap(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class BootstrapStaticResources(betterproto.Message):
-    # Static :ref:`Listeners <envoy_api_msg_config.listener.v4alpha.Listener>`.
+    # Static :ref:`Listeners <envoy_v3_api_msg_config.listener.v3.Listener>`.
     # These listeners are available regardless of LDS configuration.
     listeners: List["__listener_v4_alpha__.Listener"] = betterproto.message_field(1)
     # If a network based configuration source is specified for :ref:`cds_config <
-    # envoy_api_field_config.bootstrap.v4alpha.Bootstrap.DynamicResources.cds_con
-    # fig>`, it's necessary to have some initial cluster definitions available to
+    # envoy_v3_api_field_config.bootstrap.v3.Bootstrap.DynamicResources.cds_confi
+    # g>`, it's necessary to have some initial cluster definitions available to
     # allow Envoy to know how to speak to the management server. These cluster
     # definitions may not use :ref:`EDS <arch_overview_dynamic_config_eds>` (i.e.
     # they should be static IP or DNS-based).
     clusters: List["__cluster_v4_alpha__.Cluster"] = betterproto.message_field(2)
     # These static secrets can be used by :ref:`SdsSecretConfig
-    # <envoy_api_msg_extensions.transport_sockets.tls.v4alpha.SdsSecretConfig>`
+    # <envoy_v3_api_msg_extensions.transport_sockets.tls.v3.SdsSecretConfig>`
     secrets: List[
         "___extensions_transport_sockets_tls_v4_alpha__.Secret"
     ] = betterproto.message_field(3)
@@ -172,30 +180,25 @@ class BootstrapStaticResources(betterproto.Message):
 class BootstrapDynamicResources(betterproto.Message):
     """[#next-free-field: 7]"""
 
-    # All :ref:`Listeners <envoy_api_msg_config.listener.v4alpha.Listener>` are
+    # All :ref:`Listeners <envoy_v3_api_msg_config.listener.v3.Listener>` are
     # provided by a single :ref:`LDS <arch_overview_dynamic_config_lds>`
     # configuration source.
     lds_config: "__core_v4_alpha__.ConfigSource" = betterproto.message_field(1)
-    # Resource locator for listener collection. [#not-implemented-hide:]
-    lds_resources_locator: "____udpa_core_v1__.ResourceLocator" = (
-        betterproto.message_field(5)
-    )
+    # xdstp:// resource locator for listener collection. [#not-implemented-hide:]
+    lds_resources_locator: str = betterproto.string_field(5)
     # All post-bootstrap :ref:`Cluster
-    # <envoy_api_msg_config.cluster.v4alpha.Cluster>` definitions are provided by
-    # a single :ref:`CDS <arch_overview_dynamic_config_cds>` configuration
-    # source.
+    # <envoy_v3_api_msg_config.cluster.v3.Cluster>` definitions are provided by a
+    # single :ref:`CDS <arch_overview_dynamic_config_cds>` configuration source.
     cds_config: "__core_v4_alpha__.ConfigSource" = betterproto.message_field(2)
-    # Resource locator for cluster collection. [#not-implemented-hide:]
-    cds_resources_locator: "____udpa_core_v1__.ResourceLocator" = (
-        betterproto.message_field(6)
-    )
+    # xdstp:// resource locator for cluster collection. [#not-implemented-hide:]
+    cds_resources_locator: str = betterproto.string_field(6)
     # A single :ref:`ADS <config_overview_ads>` source may be optionally
     # specified. This must have :ref:`api_type
-    # <envoy_api_field_config.core.v4alpha.ApiConfigSource.api_type>` :ref:`GRPC
-    # <envoy_api_enum_value_config.core.v4alpha.ApiConfigSource.ApiType.GRPC>`.
-    # Only :ref:`ConfigSources <envoy_api_msg_config.core.v4alpha.ConfigSource>`
+    # <envoy_v3_api_field_config.core.v3.ApiConfigSource.api_type>` :ref:`GRPC
+    # <envoy_v3_api_enum_value_config.core.v3.ApiConfigSource.ApiType.GRPC>`.
+    # Only :ref:`ConfigSources <envoy_v3_api_msg_config.core.v3.ConfigSource>`
     # that have the :ref:`ads
-    # <envoy_api_field_config.core.v4alpha.ConfigSource.ads>` field set will be
+    # <envoy_v3_api_field_config.core.v3.ConfigSource.ads>` field set will be
     # streamed on the ADS channel.
     ads_config: "__core_v4_alpha__.ApiConfigSource" = betterproto.message_field(3)
 
@@ -204,14 +207,12 @@ class BootstrapDynamicResources(betterproto.Message):
 class Admin(betterproto.Message):
     """
     Administration interface :ref:`operations documentation
-    <operations_admin_interface>`.
+    <operations_admin_interface>`. [#next-free-field: 6]
     """
 
-    # The path to write the access log for the administration server. If no
-    # access log is desired specify ‘/dev/null’. This is only required if
-    # :ref:`address <envoy_api_field_config.bootstrap.v4alpha.Admin.address>` is
-    # set.
-    access_log_path: str = betterproto.string_field(1)
+    # Configuration for :ref:`access logs <arch_overview_access_logs>` emitted by
+    # the administration server.
+    access_log: List["__accesslog_v4_alpha__.AccessLog"] = betterproto.message_field(5)
     # The cpu profiler output path for the administration server. If no profile
     # path is specified, the default is ‘/var/log/envoy/envoy.prof’.
     profile_path: str = betterproto.string_field(2)
@@ -236,9 +237,9 @@ class ClusterManager(betterproto.Message):
     # this configuration). In order to enable :ref:`zone aware routing
     # <arch_overview_load_balancing_zone_aware_routing>` this option must be set.
     # If *local_cluster_name* is defined then :ref:`clusters
-    # <envoy_api_msg_config.cluster.v4alpha.Cluster>` must be defined in the
-    # :ref:`Bootstrap static cluster resources <envoy_api_field_config.bootstrap.
-    # v4alpha.Bootstrap.StaticResources.clusters>`. This is unrelated to the
+    # <envoy_v3_api_msg_config.cluster.v3.Cluster>` must be defined in the
+    # :ref:`Bootstrap static cluster resources <envoy_v3_api_field_config.bootstr
+    # ap.v3.Bootstrap.StaticResources.clusters>`. This is unrelated to the
     # :option:`--service-cluster` option which does not `affect zone aware
     # routing <https://github.com/envoyproxy/envoy/issues/774>`_.
     local_cluster_name: str = betterproto.string_field(1)
@@ -250,8 +251,8 @@ class ClusterManager(betterproto.Message):
     upstream_bind_config: "__core_v4_alpha__.BindConfig" = betterproto.message_field(3)
     # A management server endpoint to stream load stats to via *StreamLoadStats*.
     # This must have :ref:`api_type
-    # <envoy_api_field_config.core.v4alpha.ApiConfigSource.api_type>` :ref:`GRPC
-    # <envoy_api_enum_value_config.core.v4alpha.ApiConfigSource.ApiType.GRPC>`.
+    # <envoy_v3_api_field_config.core.v3.ApiConfigSource.api_type>` :ref:`GRPC
+    # <envoy_v3_api_enum_value_config.core.v3.ApiConfigSource.ApiType.GRPC>`.
     load_stats_config: "__core_v4_alpha__.ApiConfigSource" = betterproto.message_field(
         4
     )
@@ -326,6 +327,23 @@ class WatchdogWatchdogAction(betterproto.Message):
     # Extension specific configuration for the action.
     config: "__core_v4_alpha__.TypedExtensionConfig" = betterproto.message_field(1)
     event: "WatchdogWatchdogActionWatchdogEvent" = betterproto.enum_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class FatalAction(betterproto.Message):
+    """
+    Fatal actions to run while crashing. Actions can be safe (meaning they are
+    async-signal safe) or unsafe. We run all safe actions before we run unsafe
+    actions. If using an unsafe action that could get stuck or deadlock, it
+    important to have an out of band system to terminate the process. The
+    interface for the extension is
+    ``Envoy::Server::Configuration::FatalAction``. *FatalAction* extensions
+    live in the ``envoy.extensions.fatal_actions`` API namespace.
+    """
+
+    # Extension specific configuration for the action. It's expected to conform
+    # to the ``Envoy::Server::Configuration::FatalAction`` interface.
+    config: "__core_v4_alpha__.TypedExtensionConfig" = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
@@ -414,12 +432,7 @@ class RuntimeLayerRtdsLayer(betterproto.Message):
     """:ref:`Runtime Discovery Service (RTDS) <config_runtime_rtds>` layer."""
 
     # Resource to subscribe to at *rtds_config* for the RTDS layer.
-    name: str = betterproto.string_field(1, group="name_specifier")
-    # Resource locator for RTDS layer. This is mutually exclusive to *name*.
-    # [#not-implemented-hide:]
-    rtds_resource_locator: "____udpa_core_v1__.ResourceLocator" = (
-        betterproto.message_field(3, group="name_specifier")
-    )
+    name: str = betterproto.string_field(1)
     # RTDS configuration source.
     rtds_config: "__core_v4_alpha__.ConfigSource" = betterproto.message_field(2)
 
@@ -433,11 +446,11 @@ class LayeredRuntime(betterproto.Message):
     layers: List["RuntimeLayer"] = betterproto.message_field(1)
 
 
-from .....udpa.core import v1 as ____udpa_core_v1__
 from ....extensions.transport_sockets.tls import (
     v4alpha as ___extensions_transport_sockets_tls_v4_alpha__,
 )
 from ....type import v3 as ___type_v3__
+from ...accesslog import v4alpha as __accesslog_v4_alpha__
 from ...cluster import v4alpha as __cluster_v4_alpha__
 from ...core import v4alpha as __core_v4_alpha__
 from ...listener import v4alpha as __listener_v4_alpha__

@@ -17,7 +17,7 @@ class Endpoint(betterproto.Message):
     # depends on the given cluster type. For STATIC or EDS,   it is expected to
     # be a direct IP address (or something resolvable by the   specified
     # :ref:`resolver
-    # <envoy_api_field_config.core.v3.SocketAddress.resolver_name>`   in the
+    # <envoy_v3_api_field_config.core.v3.SocketAddress.resolver_name>`   in the
     # Address). For LOGICAL or STRICT DNS, it is expected to be hostname,   and
     # will be resolved via DNS.
     address: "__core_v3__.Address" = betterproto.message_field(1)
@@ -30,7 +30,7 @@ class Endpoint(betterproto.Message):
     # routing or address resolution. If provided, it will be associated with the
     # endpoint, and can be used for features that require a hostname, like
     # :ref:`auto_host_rewrite
-    # <envoy_api_field_config.route.v3.RouteAction.auto_host_rewrite>`.
+    # <envoy_v3_api_field_config.route.v3.RouteAction.auto_host_rewrite>`.
     hostname: str = betterproto.string_field(3)
 
 
@@ -46,11 +46,10 @@ class EndpointHealthCheckConfig(betterproto.Message):
     port_value: int = betterproto.uint32_field(1)
     # By default, the host header for L7 health checks is controlled by cluster
     # level configuration (see: :ref:`host
-    # <envoy_api_field_config.core.v3.HealthCheck.HttpHealthCheck.host>` and
-    # :ref:`authority
-    # <envoy_api_field_config.core.v3.HealthCheck.GrpcHealthCheck.authority>`).
-    # Setting this to a non-empty value allows overriding the cluster level
-    # configuration for a specific endpoint.
+    # <envoy_v3_api_field_config.core.v3.HealthCheck.HttpHealthCheck.host>` and
+    # :ref:`authority <envoy_v3_api_field_config.core.v3.HealthCheck.GrpcHealthCh
+    # eck.authority>`). Setting this to a non-empty value allows overriding the
+    # cluster level configuration for a specific endpoint.
     hostname: str = betterproto.string_field(2)
 
 
@@ -68,8 +67,8 @@ class LbEndpoint(betterproto.Message):
     # name should be specified as *envoy.lb*. An example boolean key-value pair
     # is *canary*, providing the optional canary status of the upstream host.
     # This may be matched against in a route's :ref:`RouteAction
-    # <envoy_api_msg_config.route.v3.RouteAction>` metadata_match field to subset
-    # the endpoints considered in cluster load balancing.
+    # <envoy_v3_api_msg_config.route.v3.RouteAction>` metadata_match field to
+    # subset the endpoints considered in cluster load balancing.
     metadata: "__core_v3__.Metadata" = betterproto.message_field(3)
     # The optional load balancing weight of the upstream host; at least 1. Envoy
     # uses the load balancing weight in some of the built in load balancers. The
@@ -142,10 +141,10 @@ class ClusterLoadAssignment(betterproto.Message):
     [#next-free-field: 6]
     """
 
-    # Name of the cluster. This will be the :ref:`service_name
-    # <envoy_api_field_config.cluster.v3.Cluster.EdsClusterConfig.service_name>`
-    # value if specified in the cluster :ref:`EdsClusterConfig
-    # <envoy_api_msg_config.cluster.v3.Cluster.EdsClusterConfig>`.
+    # Name of the cluster. This will be the :ref:`service_name <envoy_v3_api_fiel
+    # d_config.cluster.v3.Cluster.EdsClusterConfig.service_name>` value if
+    # specified in the cluster :ref:`EdsClusterConfig
+    # <envoy_v3_api_msg_config.cluster.v3.Cluster.EdsClusterConfig>`.
     cluster_name: str = betterproto.string_field(1)
     # List of endpoints to load balance to.
     endpoints: List["LocalityLbEndpoints"] = betterproto.message_field(2)
@@ -210,8 +209,8 @@ class ClusterLoadAssignmentPolicyDropOverload(betterproto.Message):
 class UpstreamLocalityStats(betterproto.Message):
     """
     These are stats Envoy reports to the management server at a frequency
-    defined by :ref:`LoadStatsResponse.load_reporting_interval<envoy_api_field_
-    service.load_stats.v3.LoadStatsResponse.load_reporting_interval>`. Stats
+    defined by :ref:`LoadStatsResponse.load_reporting_interval<envoy_v3_api_fie
+    ld_service.load_stats.v3.LoadStatsResponse.load_reporting_interval>`. Stats
     per upstream region/zone and optionally per subzone. [#next-free-field: 9]
     """
 
@@ -234,8 +233,8 @@ class UpstreamLocalityStats(betterproto.Message):
     load_metric_stats: List["EndpointLoadMetricStats"] = betterproto.message_field(5)
     # Endpoint granularity stats information for this locality. This information
     # is populated if the Server requests it by setting :ref:`LoadStatsResponse.r
-    # eport_endpoint_granularity<envoy_api_field_service.load_stats.v3.LoadStatsR
-    # esponse.report_endpoint_granularity>`.
+    # eport_endpoint_granularity<envoy_v3_api_field_service.load_stats.v3.LoadSta
+    # tsResponse.report_endpoint_granularity>`.
     upstream_endpoint_stats: List["UpstreamEndpointStats"] = betterproto.message_field(
         7
     )
@@ -288,8 +287,8 @@ class EndpointLoadMetricStats(betterproto.Message):
 class ClusterStats(betterproto.Message):
     """
     Per cluster load stats. Envoy reports these stats a management server in a
-    :ref:`LoadStatsRequest<envoy_api_msg_service.load_stats.v3.LoadStatsRequest
-    >` Next ID: 7 [#next-free-field: 7]
+    :ref:`LoadStatsRequest<envoy_v3_api_msg_service.load_stats.v3.LoadStatsRequ
+    est>` Next ID: 7 [#next-free-field: 7]
     """
 
     # The name of the cluster.

@@ -54,9 +54,8 @@ class Gzip(betterproto.Message):
     window_bits: Optional[int] = betterproto.message_field(
         9, wraps=betterproto.TYPE_UINT32
     )
-    # Set of configuration parameters common for all compression filters. If this
-    # field is set then the fields `content_length`, `content_type`,
-    # `disable_on_etag_header` and `remove_accept_encoding_header` are ignored.
+    # Set of configuration parameters common for all compression filters. You can
+    # define `content_length`, `content_type` and other parameters in this field.
     compressor: "__compressor_v3__.Compressor" = betterproto.message_field(10)
     # Value for Zlib's next output buffer. If not set, defaults to 4096. See
     # https://www.zlib.net/manual.html for more details. Also see

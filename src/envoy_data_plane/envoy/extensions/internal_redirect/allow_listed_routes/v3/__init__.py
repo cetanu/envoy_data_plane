@@ -18,6 +18,6 @@ class AllowListedRoutesConfig(betterproto.Message):
 
     # The list of routes that's allowed as redirect target by this predicate,
     # identified by the route's :ref:`name
-    # <envoy_api_field_config.route.v3.Route.route>`. Empty route names are not
-    # allowed.
+    # <envoy_v3_api_field_config.route.v3.Route.route>`. Empty route names are
+    # not allowed.
     allowed_route_names: List[str] = betterproto.string_field(1)

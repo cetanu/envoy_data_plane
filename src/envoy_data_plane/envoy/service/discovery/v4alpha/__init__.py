@@ -2,6 +2,7 @@
 # sources: envoy/service/discovery/v4alpha/ads.proto, envoy/service/discovery/v4alpha/discovery.proto
 # plugin: python-betterproto
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import AsyncIterable, AsyncIterator, Dict, Iterable, List, Union
 
 import betterproto
@@ -45,9 +46,9 @@ class DiscoveryRequest(betterproto.Message):
     # delta, where it is populated only for new explicit ACKs).
     response_nonce: str = betterproto.string_field(5)
     # This is populated when the previous :ref:`DiscoveryResponse
-    # <envoy_api_msg_service.discovery.v4alpha.DiscoveryResponse>` failed to
-    # update configuration. The *message* field in *error_details* provides the
-    # Envoy internal exception related to the failure. It is only intended for
+    # <envoy_v3_api_msg_service.discovery.v3.DiscoveryResponse>` failed to update
+    # configuration. The *message* field in *error_details* provides the Envoy
+    # internal exception related to the failure. It is only intended for
     # consumption during manual debugging, the string provided is not guaranteed
     # to be stable across Envoy versions.
     error_detail: "____google_rpc__.Status" = betterproto.message_field(6)
@@ -88,7 +89,7 @@ class DiscoveryResponse(betterproto.Message):
     # DiscoveryRequest bearing the nonce. The nonce is optional and is not
     # required for non-stream based xDS implementations.
     nonce: str = betterproto.string_field(5)
-    # [#not-implemented-hide:] The control plane instance that sent the response.
+    # The control plane instance that sent the response.
     control_plane: "___config_core_v4_alpha__.ControlPlane" = betterproto.message_field(
         6
     )
@@ -121,7 +122,7 @@ class DeltaDiscoveryRequest(betterproto.Message):
     type_url: a Cluster ACK exists in a completely separate world from a prior
     Route NACK. In particular, initial_resource_versions being sent at the
     "start" of every gRPC stream actually entails a message for each type_url,
-    each with its own initial_resource_versions. [#next-free-field: 10]
+    each with its own initial_resource_versions. [#next-free-field: 8]
     """
 
     # The node making the request.
@@ -129,7 +130,7 @@ class DeltaDiscoveryRequest(betterproto.Message):
     # Type of the resource that is being requested, e.g.
     # "type.googleapis.com/envoy.api.v2.ClusterLoadAssignment". This does not
     # need to be set if resources are only referenced via
-    # *udpa_resource_subscribe* and *udpa_resources_unsubscribe*.
+    # *xds_resource_subscribe* and *xds_resources_unsubscribe*.
     type_url: str = betterproto.string_field(2)
     # DeltaDiscoveryRequests allow the client to add or remove individual
     # resources to the set of tracked resources in the context of a stream. All
@@ -149,22 +150,8 @@ class DeltaDiscoveryRequest(betterproto.Message):
     # initial_resource_versions. A list of Resource names to add to the list of
     # tracked resources.
     resource_names_subscribe: List[str] = betterproto.string_field(3)
-    # As with *resource_names_subscribe* but used when subscribing to resources
-    # indicated by a *udpa.core.v1.ResourceLocator*. The directives in the
-    # resource locator are ignored and the context parameters are matched with
-    # *context_param_specifier* specific semantics. [#not-implemented-hide:]
-    udpa_resources_subscribe: List[
-        "____udpa_core_v1__.ResourceLocator"
-    ] = betterproto.message_field(8)
     # A list of Resource names to remove from the list of tracked resources.
     resource_names_unsubscribe: List[str] = betterproto.string_field(4)
-    # As with *resource_names_unsubscribe* but used when unsubscribing to
-    # resources indicated by a *udpa.core.v1.ResourceLocator*. This must match a
-    # previously subscribed resource locator provided in
-    # *udpa_resources_subscribe*. [#not-implemented-hide:]
-    udpa_resources_unsubscribe: List[
-        "____udpa_core_v1__.ResourceLocator"
-    ] = betterproto.message_field(9)
     # Informs the server of the versions of the resources the xDS client knows
     # of, to enable the client to continue the same logical xDS session even in
     # the face of gRPC stream reconnection. It will not be populated: [1] in the
@@ -183,9 +170,9 @@ class DeltaDiscoveryRequest(betterproto.Message):
     # response_nonce must be omitted.
     response_nonce: str = betterproto.string_field(6)
     # This is populated when the previous :ref:`DiscoveryResponse
-    # <envoy_api_msg_service.discovery.v4alpha.DiscoveryResponse>` failed to
-    # update configuration. The *message* field in *error_details* provides the
-    # Envoy internal exception related to the failure.
+    # <envoy_v3_api_msg_service.discovery.v3.DiscoveryResponse>` failed to update
+    # configuration. The *message* field in *error_details* provides the Envoy
+    # internal exception related to the failure.
     error_detail: "____google_rpc__.Status" = betterproto.message_field(7)
 
 
@@ -200,35 +187,27 @@ class DeltaDiscoveryResponse(betterproto.Message):
     resources: List["Resource"] = betterproto.message_field(2)
     # Type URL for resources. Identifies the xDS API when muxing over ADS. Must
     # be consistent with the type_url in the Any within 'resources' if
-    # 'resources' is non-empty. This does not need to be set if
-    # *udpa_removed_resources* is used instead of *removed_resources*.
+    # 'resources' is non-empty.
     type_url: str = betterproto.string_field(4)
     # Resources names of resources that have be deleted and to be removed from
     # the xDS Client. Removed resources for missing resources can be ignored.
     removed_resources: List[str] = betterproto.string_field(6)
-    # As with *removed_resources* but used when a removed resource was named in
-    # its *Resource*s with a *udpa.core.v1.ResourceName*. [#not-implemented-
-    # hide:]
-    udpa_removed_resources: List[
-        "____udpa_core_v1__.ResourceName"
-    ] = betterproto.message_field(7)
     # The nonce provides a way for DeltaDiscoveryRequests to uniquely reference a
     # DeltaDiscoveryResponse when (N)ACKing. The nonce is required.
     nonce: str = betterproto.string_field(5)
+    # [#not-implemented-hide:] The control plane instance that sent the response.
+    control_plane: "___config_core_v4_alpha__.ControlPlane" = betterproto.message_field(
+        7
+    )
 
 
 @dataclass(eq=False, repr=False)
 class Resource(betterproto.Message):
-    """[#next-free-field: 6]"""
+    """[#next-free-field: 8]"""
 
     # The resource's name, to distinguish it from others of the same type of
     # resource.
-    name: str = betterproto.string_field(3, group="name_specifier")
-    # Used instead of *name* when a resource with a *udpa.core.v1.ResourceName*
-    # is delivered.
-    udpa_resource_name: "____udpa_core_v1__.ResourceName" = betterproto.message_field(
-        5, group="name_specifier"
-    )
+    name: str = betterproto.string_field(3)
     # The aliases are a list of other names that this resource can go by.
     aliases: List[str] = betterproto.string_field(4)
     # The resource level version. It allows xDS to track the state of individual
@@ -236,6 +215,31 @@ class Resource(betterproto.Message):
     version: str = betterproto.string_field(1)
     # The resource being tracked.
     resource: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(2)
+    # Time-to-live value for the resource. For each resource, a timer is started.
+    # The timer is reset each time the resource is received with a new TTL. If
+    # the resource is received with no TTL set, the timer is removed for the
+    # resource. Upon expiration of the timer, the configuration for the resource
+    # will be removed. The TTL can be refreshed or changed by sending a response
+    # that doesn't change the resource version. In this case the resource field
+    # does not need to be populated, which allows for light-weight "heartbeat"
+    # updates to keep a resource with a TTL alive. The TTL feature is meant to
+    # support configurations that should be removed in the event of a management
+    # server failure. For example, the feature may be used for fault injection
+    # testing where the fault injection should be terminated in the event that
+    # Envoy loses contact with the management server.
+    ttl: timedelta = betterproto.message_field(6)
+    # Cache control properties for the resource. [#not-implemented-hide:]
+    cache_control: "ResourceCacheControl" = betterproto.message_field(7)
+
+
+@dataclass(eq=False, repr=False)
+class ResourceCacheControl(betterproto.Message):
+    """Cache control properties for the resource. [#not-implemented-hide:]"""
+
+    # If true, xDS proxies may not cache this resource. Note that this does not
+    # apply to clients other than xDS proxies, which must cache resources for
+    # their own use, regardless of the value of this field.
+    do_not_cache: bool = betterproto.bool_field(1)
 
 
 @dataclass(eq=False, repr=False)
@@ -331,6 +335,5 @@ class AggregatedDiscoveryServiceBase(ServiceBase):
 
 
 from .....google import rpc as ____google_rpc__
-from .....udpa.core import v1 as ____udpa_core_v1__
 from ....config.core import v4alpha as ___config_core_v4_alpha__
 import betterproto.lib.google.protobuf as betterproto_lib_google_protobuf

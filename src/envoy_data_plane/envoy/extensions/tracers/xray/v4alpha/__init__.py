@@ -9,6 +9,8 @@ from betterproto.grpc.grpclib_server import ServiceBase
 
 @dataclass(eq=False, repr=False)
 class XRayConfig(betterproto.Message):
+    """[#extension: envoy.tracers.xray]"""
+
     # The UDP endpoint of the X-Ray Daemon where the spans will be sent. If this
     # value is not set, the default value of 127.0.0.1:2000 will be used.
     daemon_endpoint: "____config_core_v4_alpha__.SocketAddress" = (

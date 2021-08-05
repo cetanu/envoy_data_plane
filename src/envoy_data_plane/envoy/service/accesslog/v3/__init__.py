@@ -41,8 +41,8 @@ class StreamAccessLogsMessageIdentifier(betterproto.Message):
     # The node sending the access log messages over the stream.
     node: "___config_core_v3__.Node" = betterproto.message_field(1)
     # The friendly name of the log configured in :ref:`CommonGrpcAccessLogConfig
-    # <envoy_api_msg_extensions.access_loggers.grpc.v3.CommonGrpcAccessLogConfig>
-    # `.
+    # <envoy_v3_api_msg_extensions.access_loggers.grpc.v3.CommonGrpcAccessLogConf
+    # ig>`.
     log_name: str = betterproto.string_field(2)
 
 

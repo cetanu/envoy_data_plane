@@ -12,6 +12,7 @@ class HealthCheckFailureType(betterproto.Enum):
     ACTIVE = 0
     PASSIVE = 1
     NETWORK = 2
+    NETWORK_TIMEOUT = 3
 
 
 class HealthCheckerType(betterproto.Enum):
@@ -62,8 +63,8 @@ class HealthCheckEjectUnhealthy(betterproto.Message):
 class HealthCheckAddHealthy(betterproto.Message):
     # Whether this addition is the result of the first ever health check on a
     # host, in which case the configured :ref:`healthy threshold
-    # <envoy_api_field_config.core.v3.HealthCheck.healthy_threshold>` is bypassed
-    # and the host is immediately added.
+    # <envoy_v3_api_field_config.core.v3.HealthCheck.healthy_threshold>` is
+    # bypassed and the host is immediately added.
     first_check: bool = betterproto.bool_field(1)
 
 

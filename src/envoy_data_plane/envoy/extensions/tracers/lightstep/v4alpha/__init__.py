@@ -24,10 +24,12 @@ class LightstepConfig(betterproto.Message):
 
     # The cluster manager cluster that hosts the LightStep collectors.
     collector_cluster: str = betterproto.string_field(1)
-    # File containing the access token to the `LightStep
-    # <https://lightstep.com/>`_ API.
-    access_token_file: str = betterproto.string_field(2)
+    # Access token to the `LightStep <https://lightstep.com/>`_ API.
+    access_token: "____config_core_v4_alpha__.DataSource" = betterproto.message_field(4)
     # Propagation modes to use by LightStep's tracer.
     propagation_modes: List["LightstepConfigPropagationMode"] = betterproto.enum_field(
         3
     )
+
+
+from .....config.core import v4alpha as ____config_core_v4_alpha__

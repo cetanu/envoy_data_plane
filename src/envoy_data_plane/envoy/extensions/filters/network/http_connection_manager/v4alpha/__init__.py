@@ -30,6 +30,14 @@ class HttpConnectionManagerForwardClientCertDetails(betterproto.Enum):
     ALWAYS_FORWARD_ONLY = 4
 
 
+class HttpConnectionManagerPathWithEscapedSlashesAction(betterproto.Enum):
+    IMPLEMENTATION_SPECIFIC_DEFAULT = 0
+    KEEP_UNCHANGED = 1
+    REJECT_REQUEST = 2
+    UNESCAPE_AND_REDIRECT = 3
+    UNESCAPE_AND_FORWARD = 4
+
+
 class HttpConnectionManagerTracingOperationName(betterproto.Enum):
     INGRESS = 0
     EGRESS = 1
@@ -37,7 +45,7 @@ class HttpConnectionManagerTracingOperationName(betterproto.Enum):
 
 @dataclass(eq=False, repr=False)
 class HttpConnectionManager(betterproto.Message):
-    """[#next-free-field: 41]"""
+    """[#next-free-field: 49]"""
 
     # Supplies the type of codec that the connection manager should use.
     codec_type: "HttpConnectionManagerCodecType" = betterproto.enum_field(1)
@@ -73,7 +81,7 @@ class HttpConnectionManager(betterproto.Message):
     )
     # Presence of the object defines whether the connection manager emits
     # :ref:`tracing <arch_overview_tracing>` data to the :ref:`configured tracing
-    # provider <envoy_api_msg_config.trace.v4alpha.Tracing>`.
+    # provider <envoy_v3_api_msg_config.trace.v3.Tracing>`.
     tracing: "HttpConnectionManagerTracing" = betterproto.message_field(7)
     # Additional settings for HTTP requests handled by the connection manager.
     # These will be applicable to both HTTP1 and HTTP2 requests.
@@ -88,6 +96,11 @@ class HttpConnectionManager(betterproto.Message):
     http2_protocol_options: "_____config_core_v4_alpha__.Http2ProtocolOptions" = (
         betterproto.message_field(9)
     )
+    # Additional HTTP/3 settings that are passed directly to the HTTP/3 codec.
+    # [#not-implemented-hide:]
+    http3_protocol_options: "_____config_core_v4_alpha__.Http3ProtocolOptions" = (
+        betterproto.message_field(44)
+    )
     # An optional override that the connection manager will write to the server
     # header in responses. If not set, the default is *envoy*.
     server_name: str = betterproto.string_field(10)
@@ -97,10 +110,15 @@ class HttpConnectionManager(betterproto.Message):
     server_header_transformation: "HttpConnectionManagerServerHeaderTransformation" = (
         betterproto.enum_field(34)
     )
+    # Allows for explicit transformation of the :scheme header on the request
+    # path. If not set, Envoy's default :ref:`scheme
+    # <config_http_conn_man_headers_scheme>` handling applies.
+    scheme_header_transformation: "_____config_core_v4_alpha__.SchemeHeaderTransformation" = betterproto.message_field(
+        48
+    )
     # The maximum request headers size for incoming connections. If unconfigured,
     # the default max request headers allowed is 60 KiB. Requests that exceed
-    # this limit will receive a 431 response. The max configurable limit is 96
-    # KiB, based on current implementation constraints.
+    # this limit will receive a 431 response.
     max_request_headers_kb: Optional[int] = betterproto.message_field(
         29, wraps=betterproto.TYPE_UINT32
     )
@@ -111,11 +129,11 @@ class HttpConnectionManager(betterproto.Message):
     # feature, while introducing robustness to TCP connections that terminate
     # without a FIN. This idle timeout applies to new streams and is overridable
     # by the :ref:`route-level idle_timeout
-    # <envoy_api_field_config.route.v4alpha.RouteAction.idle_timeout>`. Even on a
+    # <envoy_v3_api_field_config.route.v3.RouteAction.idle_timeout>`. Even on a
     # stream in which the override applies, prior to receipt of the initial
-    # request headers, the :ref:`stream_idle_timeout <envoy_api_field_extensions.
-    # filters.network.http_connection_manager.v4alpha.HttpConnectionManager.strea
-    # m_idle_timeout>` applies. Each time an encode/decode event for headers or
+    # request headers, the :ref:`stream_idle_timeout <envoy_v3_api_field_extensio
+    # ns.filters.network.http_connection_manager.v3.HttpConnectionManager.stream_
+    # idle_timeout>` applies. Each time an encode/decode event for headers or
     # data is processed for the stream, the timer will be reset. If the timeout
     # fires, the stream is terminated with a 408 Request Timeout error code if no
     # upstream response header has been received, otherwise a stream reset
@@ -127,16 +145,20 @@ class HttpConnectionManager(betterproto.Message):
     # even though all data has been proxied within available flow control
     # windows. If the timeout is hit in this case, the :ref:`tx_flush_timeout
     # <config_http_conn_man_stats_per_codec>` counter will be incremented. Note
-    # that :ref:`max_stream_duration <envoy_api_field_config.core.v4alpha.HttpPro
-    # tocolOptions.max_stream_duration>` does not apply to this corner case. Note
-    # that it is possible to idle timeout even if the wire traffic for a stream
-    # is non-idle, due to the granularity of events presented to the connection
-    # manager. For example, while receiving very large request headers, it may be
-    # the case that there is traffic regularly arriving on the wire while the
-    # connection manage is only able to observe the end-of-headers event, hence
-    # the stream may still idle timeout. A value of 0 will completely disable the
-    # connection manager stream idle timeout, although per-route idle timeout
-    # overrides will continue to apply.
+    # that :ref:`max_stream_duration <envoy_v3_api_field_config.core.v3.HttpProto
+    # colOptions.max_stream_duration>` does not apply to this corner case. If the
+    # :ref:`overload action <config_overload_manager_overload_actions>`
+    # "envoy.overload_actions.reduce_timeouts" is configured, this timeout is
+    # scaled according to the value for :ref:`HTTP_DOWNSTREAM_STREAM_IDLE <envoy_
+    # v3_api_enum_value_config.overload.v3.ScaleTimersOverloadActionConfig.TimerT
+    # ype.HTTP_DOWNSTREAM_STREAM_IDLE>`. Note that it is possible to idle timeout
+    # even if the wire traffic for a stream is non-idle, due to the granularity
+    # of events presented to the connection manager. For example, while receiving
+    # very large request headers, it may be the case that there is traffic
+    # regularly arriving on the wire while the connection manage is only able to
+    # observe the end-of-headers event, hence the stream may still idle timeout.
+    # A value of 0 will completely disable the connection manager stream idle
+    # timeout, although per-route idle timeout overrides will continue to apply.
     stream_idle_timeout: timedelta = betterproto.message_field(24)
     # The amount of time that Envoy will wait for the entire request to be
     # received. The timer is activated when the request is initiated, and is
@@ -144,6 +166,11 @@ class HttpConnectionManager(betterproto.Message):
     # decoding filters have processed the request), OR when the response is
     # initiated. If not specified or set to 0, this timeout is disabled.
     request_timeout: timedelta = betterproto.message_field(28)
+    # The amount of time that Envoy will wait for the request headers to be
+    # received. The timer is activated when the first byte of the headers is
+    # received, and is disarmed when the last byte of the headers has been
+    # received. If not specified or set to 0, this timeout is disabled.
+    request_headers_timeout: timedelta = betterproto.message_field(41)
     # The time that Envoy will wait between sending an HTTP/2 “shutdown
     # notification” (GOAWAY frame with max stream ID) and a final GOAWAY frame.
     # This is used so that Envoy provides a grace period for new streams that
@@ -199,12 +226,19 @@ class HttpConnectionManager(betterproto.Message):
     use_remote_address: Optional[bool] = betterproto.message_field(
         14, wraps=betterproto.TYPE_BOOL
     )
-    # The number of additional ingress proxy hops from the right side of the
-    # :ref:`config_http_conn_man_headers_x-forwarded-for` HTTP header to trust
-    # when determining the origin client's IP address. The default is zero if
-    # this option is not specified. See the documentation for
-    # :ref:`config_http_conn_man_headers_x-forwarded-for` for more information.
-    xff_num_trusted_hops: int = betterproto.uint32_field(19)
+    # The configuration for the original IP detection extensions. When configured
+    # the extensions will be called along with the request headers and
+    # information about the downstream connection, such as the directly connected
+    # address. Each extension will then use these parameters to decide the
+    # request's effective remote address. If an extension fails to detect the
+    # original IP address and isn't configured to reject the request, the HCM
+    # will try the remaining extensions until one succeeds or rejects the
+    # request. If the request isn't rejected nor any extension succeeds, the HCM
+    # will fallback to using the remote address. [#extension-category:
+    # envoy.http.original_ip_detection]
+    original_ip_detection_extensions: List[
+        "_____config_core_v4_alpha__.TypedExtensionConfig"
+    ] = betterproto.message_field(46)
     # Configures what network addresses are considered internal for stats and
     # header sanitation purposes. If unspecified, only RFC1918 IP addresses will
     # be considered internal. See the documentation for
@@ -217,8 +251,8 @@ class HttpConnectionManager(betterproto.Message):
     # :ref:`config_http_conn_man_headers_x-forwarded-for` HTTP header. This may
     # be used in conjunction with HTTP filters that explicitly manipulate XFF
     # after the HTTP connection manager has mutated the request headers. While
-    # :ref:`use_remote_address <envoy_api_field_extensions.filters.network.http_c
-    # onnection_manager.v4alpha.HttpConnectionManager.use_remote_address>` will
+    # :ref:`use_remote_address <envoy_v3_api_field_extensions.filters.network.htt
+    # p_connection_manager.v3.HttpConnectionManager.use_remote_address>` will
     # also suppress XFF addition, it has consequences for logging and other Envoy
     # uses of the remote address, so *skip_xff_append* should be used when only
     # an elision of XFF addition is intended.
@@ -250,9 +284,9 @@ class HttpConnectionManager(betterproto.Message):
     forward_client_cert_details: "HttpConnectionManagerForwardClientCertDetails" = (
         betterproto.enum_field(16)
     )
-    # This field is valid only when :ref:`forward_client_cert_details <envoy_api_
-    # field_extensions.filters.network.http_connection_manager.v4alpha.HttpConnec
-    # tionManager.forward_client_cert_details>` is APPEND_FORWARD or SANITIZE_SET
+    # This field is valid only when :ref:`forward_client_cert_details <envoy_v3_a
+    # pi_field_extensions.filters.network.http_connection_manager.v3.HttpConnecti
+    # onManager.forward_client_cert_details>` is APPEND_FORWARD or SANITIZE_SET
     # and the client connection is mTLS. It specifies the fields in the client
     # certificate to be forwarded. Note that in the
     # :ref:`config_http_conn_man_headers_x-forwarded-client-cert` header, *Hash*
@@ -266,8 +300,8 @@ class HttpConnectionManager(betterproto.Message):
     # downstream. If this is false or not set, Envoy will instead strip the
     # "Expect: 100-continue" header, and send a "100 Continue" response itself.
     proxy_100_continue: bool = betterproto.bool_field(18)
-    # If :ref:`use_remote_address <envoy_api_field_extensions.filters.network.htt
-    # p_connection_manager.v4alpha.HttpConnectionManager.use_remote_address>` is
+    # If :ref:`use_remote_address <envoy_v3_api_field_extensions.filters.network.
+    # http_connection_manager.v3.HttpConnectionManager.use_remote_address>` is
     # true and represent_ipv4_remote_address_as_ipv4_mapped_ipv6 is true and the
     # remote address is an IPv4 address, the address will be mapped to IPv6
     # before it is appended to *x-forwarded-for*. This is useful for testing
@@ -304,12 +338,29 @@ class HttpConnectionManager(betterproto.Message):
     # is not part of `HTTP spec <https://tools.ietf.org/html/rfc3986>`_ and is
     # provided for convenience.
     merge_slashes: bool = betterproto.bool_field(33)
+    # Action to take when request URL path contains escaped slash sequences (%2F,
+    # %2f, %5C and %5c). The default value can be overridden by the :ref:`http_co
+    # nnection_manager.path_with_escaped_slashes_action<config_http_conn_man_runt
+    # ime_path_with_escaped_slashes_action>` runtime variable. The :ref:`http_con
+    # nection_manager.path_with_escaped_slashes_action_sampling<config_http_conn_
+    # man_runtime_path_with_escaped_slashes_action_enabled>` runtime variable can
+    # be used to apply the action to a portion of all requests.
+    path_with_escaped_slashes_action: "HttpConnectionManagerPathWithEscapedSlashesAction" = betterproto.enum_field(
+        45
+    )
     # The configuration of the request ID extension. This includes operations
-    # such as generation, validation, and associated tracing operations. If not
-    # set, Envoy uses the default UUID-based behavior: 1. Request ID is
-    # propagated using *x-request-id* header. 2. Request ID is a universally
-    # unique identifier (UUID). 3. Tracing decision (sampled, forced, etc) is set
-    # in 14th byte of the UUID.
+    # such as generation, validation, and associated tracing operations. If
+    # empty, the :ref:`UuidRequestIdConfig
+    # <envoy_v3_api_msg_extensions.request_id.uuid.v3.UuidRequestIdConfig>`
+    # default extension is used with default parameters. See the documentation
+    # for that extension for details on what it does. Customizing the
+    # configuration for the default extension can be achieved by configuring it
+    # explicitly here. For example, to disable trace reason packing, the
+    # following configuration can be used: .. validated-code-block:: yaml
+    # :type-name: envoy.extensions.filters.network.http_connection_manager.v3.Req
+    # uestIDExtension   typed_config:     "@type":
+    # type.googleapis.com/envoy.extensions.request_id.uuid.v3.UuidRequestIdConfig
+    # pack_trace_reason: false [#extension-category: envoy.request_id]
     request_id_extension: "RequestIdExtension" = betterproto.message_field(36)
     # The configuration to customize local reply returned by Envoy. It can
     # customize status code, body text and response content type. If not
@@ -319,15 +370,29 @@ class HttpConnectionManager(betterproto.Message):
     # Determines if the port part should be removed from host/authority header
     # before any processing of request by HTTP filters or routing. The port would
     # be removed only if it is equal to the
-    # :ref:`listener's<envoy_api_field_config.listener.v4alpha.Listener.address>`
-    # local port and request method is not CONNECT. This affects the upstream
-    # host header as well. Without setting this option, incoming requests with
-    # host `example:443` will not match against route with
-    # :ref:`domains<envoy_api_field_config.route.v4alpha.VirtualHost.domains>`
+    # :ref:`listener's<envoy_v3_api_field_config.listener.v3.Listener.address>`
+    # local port. This affects the upstream host header unless the method is
+    # CONNECT in which case if no filter adds a port the original port will be
+    # restored before headers are sent upstream. Without setting this option,
+    # incoming requests with host `example:443` will not match against route with
+    # :ref:`domains<envoy_v3_api_field_config.route.v3.VirtualHost.domains>`
     # match set to `example`. Defaults to `false`. Note that port removal is not
     # part of `HTTP spec <https://tools.ietf.org/html/rfc3986>`_ and is provided
-    # for convenience.
-    strip_matching_host_port: bool = betterproto.bool_field(39)
+    # for convenience. Only one of `strip_matching_host_port` or
+    # `strip_any_host_port` can be set.
+    strip_matching_host_port: bool = betterproto.bool_field(39, group="strip_port_mode")
+    # Determines if the port part should be removed from host/authority header
+    # before any processing of request by HTTP filters or routing. This affects
+    # the upstream host header unless the method is CONNECT in which case if no
+    # filter adds a port the original port will be restored before headers are
+    # sent upstream. Without setting this option, incoming requests with host
+    # `example:443` will not match against route with
+    # :ref:`domains<envoy_v3_api_field_config.route.v3.VirtualHost.domains>`
+    # match set to `example`. Defaults to `false`. Note that port removal is not
+    # part of `HTTP spec <https://tools.ietf.org/html/rfc3986>`_ and is provided
+    # for convenience. Only one of `strip_matching_host_port` or
+    # `strip_any_host_port` can be set.
+    strip_any_host_port: bool = betterproto.bool_field(42, group="strip_port_mode")
     # Governs Envoy's behavior when receiving invalid HTTP from downstream. If
     # this option is false (default), Envoy will err on the conservative side
     # handling HTTP errors, terminating both HTTP/1.1 and HTTP/2 connections when
@@ -349,6 +414,29 @@ class HttpConnectionManager(betterproto.Message):
     stream_error_on_invalid_http_message: Optional[bool] = betterproto.message_field(
         40, wraps=betterproto.TYPE_BOOL
     )
+    # [#not-implemented-hide:] Path normalization configuration. This includes
+    # configurations for transformations (e.g. RFC 3986 normalization or merge
+    # adjacent slashes) and the policy to apply them. The policy determines
+    # whether transformations affect the forwarded *:path* header. RFC 3986 path
+    # normalization is enabled by default and the default policy is that the
+    # normalized header will be forwarded. See :ref:`PathNormalizationOptions <en
+    # voy_v3_api_msg_extensions.filters.network.http_connection_manager.v3.PathNo
+    # rmalizationOptions>` for details.
+    path_normalization_options: "HttpConnectionManagerPathNormalizationOptions" = (
+        betterproto.message_field(43)
+    )
+    # Determines if trailing dot of the host should be removed from
+    # host/authority header before any processing of request by HTTP filters or
+    # routing. This affects the upstream host header. Without setting this
+    # option, incoming requests with host `example.com.` will not match against
+    # route with
+    # :ref:`domains<envoy_v3_api_field_config.route.v3.VirtualHost.domains>`
+    # match set to `example.com`. Defaults to `false`. When the incoming request
+    # contains a host/authority header that includes a port number, setting this
+    # option will strip a trailing dot, if present, from the host section,
+    # leaving the port as is (e.g. host value `example.com.:443` will be updated
+    # to `example.com:443`).
+    strip_trailing_host_dot: bool = betterproto.bool_field(47)
 
 
 @dataclass(eq=False, repr=False)
@@ -449,9 +537,50 @@ class HttpConnectionManagerUpgradeConfig(betterproto.Message):
     filters: List["HttpFilter"] = betterproto.message_field(2)
     # Determines if upgrades are enabled or disabled by default. Defaults to
     # true. This can be overridden on a per-route basis with :ref:`cluster
-    # <envoy_api_field_config.route.v4alpha.RouteAction.upgrade_configs>` as
+    # <envoy_v3_api_field_config.route.v3.RouteAction.upgrade_configs>` as
     # documented in the :ref:`upgrade documentation <arch_overview_upgrades>`.
     enabled: Optional[bool] = betterproto.message_field(3, wraps=betterproto.TYPE_BOOL)
+
+
+@dataclass(eq=False, repr=False)
+class HttpConnectionManagerPathNormalizationOptions(betterproto.Message):
+    """
+    [#not-implemented-hide:] Transformations that apply to path headers.
+    Transformations are applied before any processing of requests by HTTP
+    filters, routing, and matching. Only the normalized path will be visible
+    internally if a transformation is enabled. Any path rewrites that the
+    router performs (e.g. :ref:`regex_rewrite
+    <envoy_v3_api_field_config.route.v3.RouteAction.regex_rewrite>` or
+    :ref:`prefix_rewrite
+    <envoy_v3_api_field_config.route.v3.RouteAction.prefix_rewrite>`) will
+    apply to the *:path* header destined for the upstream. Note: access logging
+    and tracing will show the original *:path* header.
+    """
+
+    # [#not-implemented-hide:] Normalization applies internally before any
+    # processing of requests by HTTP filters, routing, and matching *and* will
+    # affect the forwarded *:path* header. Defaults to :ref:`NormalizePathRFC3986
+    # <envoy_v3_api_msg_type.http.v3.PathTransformation.Operation.NormalizePathRF
+    # C3986>`. When not specified, this value may be overridden by the runtime
+    # variable :ref:`http_connection_manager.normalize_path<config_http_conn_man_
+    # runtime_normalize_path>`. Envoy will respond with 400 to paths that are
+    # malformed (e.g. for paths that fail RFC 3986 normalization due to
+    # disallowed characters.)
+    forwarding_transformation: "_____type_http_v3__.PathTransformation" = (
+        betterproto.message_field(1)
+    )
+    # [#not-implemented-hide:] Normalization only applies internally before any
+    # processing of requests by HTTP filters, routing, and matching. These will
+    # be applied after full transformation is applied. The *:path* header before
+    # this transformation will be restored in the router filter and sent upstream
+    # unless it was mutated by a filter. Defaults to no transformations. Multiple
+    # actions can be applied in the same Transformation, forming a sequential
+    # pipeline. The transformations will be performed in the order that they
+    # appear. Envoy will respond with 400 to paths that are malformed (e.g. for
+    # paths that fail RFC 3986 normalization due to disallowed characters.)
+    http_filter_transformation: "_____type_http_v3__.PathTransformation" = (
+        betterproto.message_field(2)
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -526,12 +655,7 @@ class Rds(betterproto.Message):
     # API. This allows an Envoy configuration with multiple HTTP listeners (and
     # associated HTTP connection manager filters) to use different route
     # configurations.
-    route_config_name: str = betterproto.string_field(2, group="name_specifier")
-    # Resource locator for RDS. This is mutually exclusive to
-    # *route_config_name*. [#not-implemented-hide:]
-    rds_resource_locator: "______udpa_core_v1__.ResourceLocator" = (
-        betterproto.message_field(3, group="name_specifier")
-    )
+    route_config_name: str = betterproto.string_field(2)
 
 
 @dataclass(eq=False, repr=False)
@@ -562,17 +686,17 @@ class ScopedRoutes(betterproto.Message):
     )
     # The set of routing scopes corresponding to the HCM. A scope is assigned to
     # a request by matching a key constructed from the request's attributes
-    # according to the algorithm specified by the :ref:`ScopeKeyBuilder<envoy_api
-    # _msg_extensions.filters.network.http_connection_manager.v4alpha.ScopedRoute
-    # s.ScopeKeyBuilder>` in this message.
+    # according to the algorithm specified by the :ref:`ScopeKeyBuilder<envoy_v3_
+    # api_msg_extensions.filters.network.http_connection_manager.v3.ScopedRoutes.
+    # ScopeKeyBuilder>` in this message.
     scoped_route_configurations_list: "ScopedRouteConfigurationsList" = (
         betterproto.message_field(4, group="config_specifier")
     )
     # The set of routing scopes associated with the HCM will be dynamically
     # loaded via the SRDS API. A scope is assigned to a request by matching a key
     # constructed from the request's attributes according to the algorithm
-    # specified by the :ref:`ScopeKeyBuilder<envoy_api_msg_extensions.filters.net
-    # work.http_connection_manager.v4alpha.ScopedRoutes.ScopeKeyBuilder>` in this
+    # specified by the :ref:`ScopeKeyBuilder<envoy_v3_api_msg_extensions.filters.
+    # network.http_connection_manager.v3.ScopedRoutes.ScopeKeyBuilder>` in this
     # message.
     scoped_rds: "ScopedRds" = betterproto.message_field(5, group="config_specifier")
 
@@ -582,23 +706,23 @@ class ScopedRoutesScopeKeyBuilder(betterproto.Message):
     """
     Specifies the mechanism for constructing "scope keys" based on HTTP request
     attributes. These keys are matched against a set of
-    :ref:`Key<envoy_api_msg_config.route.v4alpha.ScopedRouteConfiguration.Key>`
-    objects assembled from :ref:`ScopedRouteConfiguration<envoy_api_msg_config.
-    route.v4alpha.ScopedRouteConfiguration>` messages distributed via SRDS (the
+    :ref:`Key<envoy_v3_api_msg_config.route.v3.ScopedRouteConfiguration.Key>`
+    objects assembled from :ref:`ScopedRouteConfiguration<envoy_v3_api_msg_conf
+    ig.route.v3.ScopedRouteConfiguration>` messages distributed via SRDS (the
     Scoped Route Discovery Service) or assigned statically via :ref:`scoped_rou
-    te_configurations_list<envoy_api_field_extensions.filters.network.http_conn
-    ection_manager.v4alpha.ScopedRoutes.scoped_route_configurations_list>`.
-    Upon receiving a request's headers, the Router will build a key using the
+    te_configurations_list<envoy_v3_api_field_extensions.filters.network.http_c
+    onnection_manager.v3.ScopedRoutes.scoped_route_configurations_list>`. Upon
+    receiving a request's headers, the Router will build a key using the
     algorithm specified by this message. This key will be used to look up the
-    routing table (i.e., the :ref:`RouteConfiguration<envoy_api_msg_config.rout
-    e.v4alpha.RouteConfiguration>`) to use for the request.
+    routing table (i.e., the :ref:`RouteConfiguration<envoy_v3_api_msg_config.r
+    oute.v3.RouteConfiguration>`) to use for the request.
     """
 
     # The final(built) scope key consists of the ordered union of these
     # fragments, which are compared in order with the fragments of a :ref:`Scoped
-    # RouteConfiguration<envoy_api_msg_config.route.v4alpha.ScopedRouteConfigurat
-    # ion>`. A missing fragment during comparison will make the key invalid,
-    # i.e., the computed key doesn't match any key.
+    # RouteConfiguration<envoy_v3_api_msg_config.route.v3.ScopedRouteConfiguratio
+    # n>`. A missing fragment during comparison will make the key invalid, i.e.,
+    # the computed key doesn't match any key.
     fragments: List[
         "ScopedRoutesScopeKeyBuilderFragmentBuilder"
     ] = betterproto.message_field(1)
@@ -631,7 +755,8 @@ class ScopedRoutesScopeKeyBuilderFragmentBuilderHeaderValueExtractor(
     constitutes an 'element' of the header field.
     """
 
-    # The name of the header field to extract the value from.
+    # The name of the header field to extract the value from. .. note::   If the
+    # header appears multiple times only the first value is used.
     name: str = betterproto.string_field(1)
     # The element separator (e.g., ';' separates 'a;b;c;d'). Default: empty
     # string. This causes the entirety of the header field to be extracted. If
@@ -670,18 +795,25 @@ class ScopedRds(betterproto.Message):
     scoped_rds_config_source: "_____config_core_v4_alpha__.ConfigSource" = (
         betterproto.message_field(1)
     )
+    # xdstp:// resource locator for scoped RDS collection. [#not-implemented-
+    # hide:]
+    srds_resources_locator: str = betterproto.string_field(2)
 
 
 @dataclass(eq=False, repr=False)
 class HttpFilter(betterproto.Message):
-    """[#next-free-field: 6]"""
+    """[#next-free-field: 7]"""
 
     # The name of the filter configuration. The name is used as a fallback to
     # select an extension if the type of the configuration proto is not
     # sufficient. It also serves as a resource name in ExtensionConfigDS.
     name: str = betterproto.string_field(1)
     # Filter specific configuration which depends on the filter being
-    # instantiated. See the supported filters for further documentation.
+    # instantiated. See the supported filters for further documentation. To
+    # support configuring a :ref:`match tree <arch_overview_matching_api>`, use
+    # an :ref:`ExtensionWithMatcher
+    # <envoy_v3_api_msg_extensions.common.matching.v3.ExtensionWithMatcher>` with
+    # the desired HTTP filter. [#extension-category: envoy.filters.http]
     typed_config: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(
         4, group="config_type"
     )
@@ -689,10 +821,20 @@ class HttpFilter(betterproto.Message):
     # service. In case of a failure and without the default configuration, the
     # HTTP listener responds with code 500. Extension configs delivered through
     # this mechanism are not expected to require warming (see
-    # https://github.com/envoyproxy/envoy/issues/12061).
+    # https://github.com/envoyproxy/envoy/issues/12061). To support configuring a
+    # :ref:`match tree <arch_overview_matching_api>`, use an
+    # :ref:`ExtensionWithMatcher
+    # <envoy_v3_api_msg_extensions.common.matching.v3.ExtensionWithMatcher>` with
+    # the desired HTTP filter. This works for both the default filter
+    # configuration as well as for filters provided via the API.
     config_discovery: "_____config_core_v4_alpha__.ExtensionConfigSource" = (
         betterproto.message_field(5, group="config_type")
     )
+    # If true, clients that do not support this filter may ignore the filter but
+    # otherwise accept the config. Otherwise, clients that do not support this
+    # filter must reject the config. This is also same with typed per filter
+    # config.
+    is_optional: bool = betterproto.bool_field(6)
 
 
 @dataclass(eq=False, repr=False)
@@ -701,11 +843,11 @@ class RequestIdExtension(betterproto.Message):
     typed_config: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(1)
 
 
-from .......udpa.core import v1 as ______udpa_core_v1__
 from ......config.accesslog import v4alpha as _____config_accesslog_v4_alpha__
 from ......config.core import v4alpha as _____config_core_v4_alpha__
 from ......config.route import v4alpha as _____config_route_v4_alpha__
 from ......config.trace import v4alpha as _____config_trace_v4_alpha__
 from ......type import v3 as _____type_v3__
+from ......type.http import v3 as _____type_http_v3__
 from ......type.tracing import v3 as _____type_tracing_v3__
 import betterproto.lib.google.protobuf as betterproto_lib_google_protobuf

@@ -33,6 +33,11 @@ class RedirectActionRedirectResponseCode(betterproto.Enum):
     PERMANENT_REDIRECT = 4
 
 
+class RateLimitActionMetaDataSource(betterproto.Enum):
+    DYNAMIC = 0
+    ROUTE_ENTRY = 1
+
+
 @dataclass(eq=False, repr=False)
 class VirtualHost(betterproto.Message):
     """
@@ -75,9 +80,9 @@ class VirtualHost(betterproto.Message):
     rate_limits: List["RateLimit"] = betterproto.message_field(6)
     # Specifies a list of HTTP headers that should be added to each request
     # handled by this virtual host. Headers specified at this level are applied
-    # after headers from enclosed :ref:`envoy_api_msg_config.route.v4alpha.Route`
+    # after headers from enclosed :ref:`envoy_v3_api_msg_config.route.v3.Route`
     # and before headers from the enclosing
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteConfiguration`. For more
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteConfiguration`. For more
     # information, including details on header value syntax, see the
     # documentation on :ref:`custom request headers
     # <config_http_conn_man_headers_custom_request_headers>`.
@@ -89,9 +94,9 @@ class VirtualHost(betterproto.Message):
     request_headers_to_remove: List[str] = betterproto.string_field(13)
     # Specifies a list of HTTP headers that should be added to each response
     # handled by this virtual host. Headers specified at this level are applied
-    # after headers from enclosed :ref:`envoy_api_msg_config.route.v4alpha.Route`
+    # after headers from enclosed :ref:`envoy_v3_api_msg_config.route.v3.Route`
     # and before headers from the enclosing
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteConfiguration`. For more
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteConfiguration`. For more
     # information, including details on header value syntax, see the
     # documentation on :ref:`custom request headers
     # <config_http_conn_man_headers_custom_request_headers>`.
@@ -107,7 +112,10 @@ class VirtualHost(betterproto.Message):
     # configurations for filters. The key should match the filter name, such as
     # *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field
     # is filter specific; see the :ref:`HTTP filter documentation
-    # <config_http_filters>` for if and how it is utilized.
+    # <config_http_filters>` for if and how it is utilized. [#comment: An entry's
+    # value may be wrapped in a
+    # :ref:`FilterConfig<envoy_v3_api_msg_config.route.v3.FilterConfig>` message
+    # to specify additional options.]
     typed_per_filter_config: Dict[
         str, "betterproto_lib_google_protobuf.Any"
     ] = betterproto.map_field(15, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE)
@@ -117,8 +125,8 @@ class VirtualHost(betterproto.Message):
     # override any existing header value, so in the case of two Envoys on the
     # request path with this option enabled, the upstream will see the attempt
     # count as perceived by the second Envoy. Defaults to false. This header is
-    # unaffected by the :ref:`suppress_envoy_headers <envoy_api_field_extensions.
-    # filters.http.router.v4alpha.Router.suppress_envoy_headers>` flag. [#next-
+    # unaffected by the :ref:`suppress_envoy_headers <envoy_v3_api_field_extensio
+    # ns.filters.http.router.v3.Router.suppress_envoy_headers>` flag. [#next-
     # major-version: rename to include_attempt_count_in_request.]
     include_request_attempt_count: bool = betterproto.bool_field(14)
     # Decides whether the :ref:`x-envoy-attempt-count
@@ -128,8 +136,8 @@ class VirtualHost(betterproto.Message):
     # on the request path with this option enabled, the downstream will see the
     # attempt count as perceived by the Envoy closest upstream from itself.
     # Defaults to false. This header is unaffected by the
-    # :ref:`suppress_envoy_headers <envoy_api_field_extensions.filters.http.route
-    # r.v4alpha.Router.suppress_envoy_headers>` flag.
+    # :ref:`suppress_envoy_headers <envoy_v3_api_field_extensions.filters.http.ro
+    # uter.v3.Router.suppress_envoy_headers>` flag.
     include_attempt_count_in_response: bool = betterproto.bool_field(19)
     # Indicates the retry policy for all routes in this virtual host. Note that
     # setting a route level entry will take precedence over this config and it'll
@@ -139,7 +147,7 @@ class VirtualHost(betterproto.Message):
     # extension. Note that setting a route level entry will take precedence over
     # this config and it'll be treated independently (e.g.: values are not
     # inherited). :ref:`Retry policy
-    # <envoy_api_field_config.route.v4alpha.VirtualHost.retry_policy>` should not
+    # <envoy_v3_api_field_config.route.v3.VirtualHost.retry_policy>` should not
     # be set if this field is used.
     retry_policy_typed_config: "betterproto_lib_google_protobuf.Any" = (
         betterproto.message_field(20)
@@ -170,8 +178,8 @@ class Route(betterproto.Message):
     A route is both a specification of how to match a request as well as an
     indication of what to do next (e.g., redirect, forward, rewrite, etc.). ..
     attention::   Envoy supports routing on HTTP method via :ref:`header
-    matching   <envoy_api_msg_config.route.v4alpha.HeaderMatcher>`. [#next-
-    free-field: 18]
+    matching   <envoy_v3_api_msg_config.route.v3.HeaderMatcher>`. [#next-free-
+    field: 19]
     """
 
     # Name for the route.
@@ -186,10 +194,18 @@ class Route(betterproto.Message):
     direct_response: "DirectResponseAction" = betterproto.message_field(
         7, group="action"
     )
-    # [#not-implemented-hide:] If true, a filter will define the action (e.g., it
-    # could dynamically generate the RouteAction). [#comment: TODO(samflattery):
-    # Remove cleanup in route_fuzz_test.cc when implemented]
+    # [#not-implemented-hide:] A filter-defined action (e.g., it could
+    # dynamically generate the RouteAction). [#comment: TODO(samflattery): Remove
+    # cleanup in route_fuzz_test.cc when implemented]
     filter_action: "FilterAction" = betterproto.message_field(17, group="action")
+    # [#not-implemented-hide:] An action used when the route will generate a
+    # response directly, without forwarding to an upstream host. This will be
+    # used in non-proxy xDS clients like the gRPC server. It could also be used
+    # in the future in Envoy for a filter that directly generates responses for
+    # requests.
+    non_forwarding_action: "NonForwardingAction" = betterproto.message_field(
+        18, group="action"
+    )
     # The Metadata field can be used to provide additional information about the
     # route. It can be used for configuration, stats, and logging. The metadata
     # should go under the filter namespace that will need it. For instance, if
@@ -202,14 +218,17 @@ class Route(betterproto.Message):
     # configurations for filters. The key should match the filter name, such as
     # *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field
     # is filter specific; see the :ref:`HTTP filter documentation
-    # <config_http_filters>` for if and how it is utilized.
+    # <config_http_filters>` for if and how it is utilized. [#comment: An entry's
+    # value may be wrapped in a
+    # :ref:`FilterConfig<envoy_v3_api_msg_config.route.v3.FilterConfig>` message
+    # to specify additional options.]
     typed_per_filter_config: Dict[
         str, "betterproto_lib_google_protobuf.Any"
     ] = betterproto.map_field(13, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE)
     # Specifies a set of headers that will be added to requests matching this
     # route. Headers specified at this level are applied before headers from the
-    # enclosing :ref:`envoy_api_msg_config.route.v4alpha.VirtualHost` and
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteConfiguration`. For more
+    # enclosing :ref:`envoy_v3_api_msg_config.route.v3.VirtualHost` and
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteConfiguration`. For more
     # information, including details on header value syntax, see the
     # documentation on :ref:`custom request headers
     # <config_http_conn_man_headers_custom_request_headers>`.
@@ -222,8 +241,8 @@ class Route(betterproto.Message):
     # Specifies a set of headers that will be added to responses to requests
     # matching this route. Headers specified at this level are applied before
     # headers from the enclosing
-    # :ref:`envoy_api_msg_config.route.v4alpha.VirtualHost` and
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteConfiguration`. For more
+    # :ref:`envoy_v3_api_msg_config.route.v3.VirtualHost` and
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteConfiguration`. For more
     # information, including details on header value syntax, see the
     # documentation on :ref:`custom request headers
     # <config_http_conn_man_headers_custom_request_headers>`.
@@ -248,13 +267,13 @@ class Route(betterproto.Message):
 class WeightedCluster(betterproto.Message):
     """
     Compared to the :ref:`cluster
-    <envoy_api_field_config.route.v4alpha.RouteAction.cluster>` field that
+    <envoy_v3_api_field_config.route.v3.RouteAction.cluster>` field that
     specifies a single upstream cluster as the target of a request, the
     :ref:`weighted_clusters
-    <envoy_api_field_config.route.v4alpha.RouteAction.weighted_clusters>`
-    option allows for specification of multiple upstream clusters along with
-    weights that indicate the percentage of traffic to be forwarded to each
-    cluster. The router selects an upstream cluster based on the weights.
+    <envoy_v3_api_field_config.route.v3.RouteAction.weighted_clusters>` option
+    allows for specification of multiple upstream clusters along with weights
+    that indicate the percentage of traffic to be forwarded to each cluster.
+    The router selects an upstream cluster based on the weights.
     """
 
     # Specifies one or more upstream clusters associated with the route.
@@ -279,32 +298,32 @@ class WeightedCluster(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class WeightedClusterClusterWeight(betterproto.Message):
-    """[#next-free-field: 11]"""
+    """[#next-free-field: 12]"""
 
     # Name of the upstream cluster. The cluster must exist in the :ref:`cluster
     # manager configuration <config_cluster_manager>`.
     name: str = betterproto.string_field(1)
     # An integer between 0 and :ref:`total_weight
-    # <envoy_api_field_config.route.v4alpha.WeightedCluster.total_weight>`. When
-    # a request matches the route, the choice of an upstream cluster is
-    # determined by its weight. The sum of weights across all entries in the
-    # clusters array must add up to the total_weight, which defaults to 100.
+    # <envoy_v3_api_field_config.route.v3.WeightedCluster.total_weight>`. When a
+    # request matches the route, the choice of an upstream cluster is determined
+    # by its weight. The sum of weights across all entries in the clusters array
+    # must add up to the total_weight, which defaults to 100.
     weight: Optional[int] = betterproto.message_field(2, wraps=betterproto.TYPE_UINT32)
     # Optional endpoint metadata match criteria used by the subset load balancer.
     # Only endpoints in the upstream cluster with metadata matching what is set
     # in this field will be considered for load balancing. Note that this will be
     # merged with what's provided in :ref:`RouteAction.metadata_match
-    # <envoy_api_field_config.route.v4alpha.RouteAction.metadata_match>`, with
+    # <envoy_v3_api_field_config.route.v3.RouteAction.metadata_match>`, with
     # values here taking precedence. The filter name should be specified as
     # *envoy.lb*.
     metadata_match: "__core_v4_alpha__.Metadata" = betterproto.message_field(3)
     # Specifies a list of headers to be added to requests when this cluster is
     # selected through the enclosing
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteAction`. Headers specified at
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteAction`. Headers specified at
     # this level are applied before headers from the enclosing
-    # :ref:`envoy_api_msg_config.route.v4alpha.Route`,
-    # :ref:`envoy_api_msg_config.route.v4alpha.VirtualHost`, and
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteConfiguration`. For more
+    # :ref:`envoy_v3_api_msg_config.route.v3.Route`,
+    # :ref:`envoy_v3_api_msg_config.route.v3.VirtualHost`, and
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteConfiguration`. For more
     # information, including details on header value syntax, see the
     # documentation on :ref:`custom request headers
     # <config_http_conn_man_headers_custom_request_headers>`.
@@ -313,15 +332,15 @@ class WeightedClusterClusterWeight(betterproto.Message):
     ] = betterproto.message_field(4)
     # Specifies a list of HTTP headers that should be removed from each request
     # when this cluster is selected through the enclosing
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteAction`.
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteAction`.
     request_headers_to_remove: List[str] = betterproto.string_field(9)
     # Specifies a list of headers to be added to responses when this cluster is
     # selected through the enclosing
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteAction`. Headers specified at
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteAction`. Headers specified at
     # this level are applied before headers from the enclosing
-    # :ref:`envoy_api_msg_config.route.v4alpha.Route`,
-    # :ref:`envoy_api_msg_config.route.v4alpha.VirtualHost`, and
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteConfiguration`. For more
+    # :ref:`envoy_v3_api_msg_config.route.v3.Route`,
+    # :ref:`envoy_v3_api_msg_config.route.v3.VirtualHost`, and
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteConfiguration`. For more
     # information, including details on header value syntax, see the
     # documentation on :ref:`custom request headers
     # <config_http_conn_man_headers_custom_request_headers>`.
@@ -330,16 +349,24 @@ class WeightedClusterClusterWeight(betterproto.Message):
     ] = betterproto.message_field(5)
     # Specifies a list of headers to be removed from responses when this cluster
     # is selected through the enclosing
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteAction`.
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteAction`.
     response_headers_to_remove: List[str] = betterproto.string_field(6)
     # The per_filter_config field can be used to provide weighted cluster-
     # specific configurations for filters. The key should match the filter name,
     # such as *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this
     # field is filter specific; see the :ref:`HTTP filter documentation
-    # <config_http_filters>` for if and how it is utilized.
+    # <config_http_filters>` for if and how it is utilized. [#comment: An entry's
+    # value may be wrapped in a
+    # :ref:`FilterConfig<envoy_v3_api_msg_config.route.v3.FilterConfig>` message
+    # to specify additional options.]
     typed_per_filter_config: Dict[
         str, "betterproto_lib_google_protobuf.Any"
     ] = betterproto.map_field(10, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE)
+    # Indicates that during forwarding, the host header will be swapped with this
+    # value.
+    host_rewrite_literal: str = betterproto.string_field(
+        11, group="host_rewrite_specifier"
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -373,13 +400,13 @@ class RouteMatch(betterproto.Message):
     # HTTP/1.1 style upgrades. This is the only way to match CONNECT requests for
     # HTTP/1.1. For HTTP/2, where Extended CONNECT requests may have a path, the
     # path matchers will work if there is a path present. Note that CONNECT
-    # support is currently considered alpha in Envoy. [#comment:TODO(htuch):
-    # Replace the above comment with an alpha tag.
+    # support is currently considered alpha in Envoy. [#comment: TODO(htuch):
+    # Replace the above comment with an alpha tag.]
     connect_matcher: "RouteMatchConnectMatcher" = betterproto.message_field(
         12, group="path_specifier"
     )
     # Indicates that prefix/path matching should be case sensitive. The default
-    # is true.
+    # is true. Ignored for safe_regex matching.
     case_sensitive: Optional[bool] = betterproto.message_field(
         4, wraps=betterproto.TYPE_BOOL
     )
@@ -478,7 +505,7 @@ class CorsPolicy(betterproto.Message):
     # neither ``enabled``, ``filter_enabled``, nor ``shadow_enabled`` are
     # specified, the CORS filter will be enabled for 100% of the requests. If
     # :ref:`runtime_key
-    # <envoy_api_field_config.core.v4alpha.RuntimeFractionalPercent.runtime_key>`
+    # <envoy_v3_api_field_config.core.v3.RuntimeFractionalPercent.runtime_key>`
     # is specified, Envoy will lookup the runtime key to get the percentage of
     # requests to filter.
     filter_enabled: "__core_v4_alpha__.RuntimeFractionalPercent" = (
@@ -489,7 +516,7 @@ class CorsPolicy(betterproto.Message):
     # ``filter_enabled`` and ``enabled`` are off. One of those fields have to
     # explicitly disable the filter in order for this setting to take effect. If
     # :ref:`runtime_key
-    # <envoy_api_field_config.core.v4alpha.RuntimeFractionalPercent.runtime_key>`
+    # <envoy_v3_api_field_config.core.v3.RuntimeFractionalPercent.runtime_key>`
     # is specified, Envoy will lookup the runtime key to get the percentage of
     # requests for which it will evaluate and track the request's *Origin* to
     # determine if it's valid but will not enforce any policies.
@@ -500,7 +527,7 @@ class CorsPolicy(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class RouteAction(betterproto.Message):
-    """[#next-free-field: 37]"""
+    """[#next-free-field: 38]"""
 
     # Indicates the upstream cluster to which the request should be routed to.
     cluster: str = betterproto.string_field(1, group="cluster_specifier")
@@ -509,7 +536,8 @@ class RouteAction(betterproto.Message):
     # is not found or the referenced cluster does not exist, Envoy will return a
     # 404 response. .. attention::   Internally, Envoy always uses the HTTP/2
     # *:authority* header to represent the HTTP/1   *Host* header. Thus, if
-    # attempting to match on *Host*, match on *:authority* instead.
+    # attempting to match on *Host*, match on *:authority* instead. .. note::
+    # If the header appears multiple times only the first value is used.
     cluster_header: str = betterproto.string_field(2, group="cluster_specifier")
     # Multiple upstream clusters can be specified for a given route. The request
     # is routed to one of the upstream clusters based on weights assigned to each
@@ -518,6 +546,14 @@ class RouteAction(betterproto.Message):
     # documentation.
     weighted_clusters: "WeightedCluster" = betterproto.message_field(
         3, group="cluster_specifier"
+    )
+    # [#not-implemented-hide:] Name of the cluster specifier plugin to use to
+    # determine the cluster for requests on this route. The plugin name must be
+    # defined in the associated :ref:`envoy_v3_api_field_config.route.v3.RouteCon
+    # figuration.cluster_specifier_plugins` in the
+    # :ref:`envoy_v3_api_field_config.core.v3.TypedExtensionConfig.name` field.
+    cluster_specifier_plugin: str = betterproto.string_field(
+        37, group="cluster_specifier"
     )
     # The HTTP status code to use when configured cluster is not found. The
     # default response code is 503 Service Unavailable.
@@ -528,7 +564,7 @@ class RouteAction(betterproto.Message):
     # Only endpoints in the upstream cluster with metadata matching what's set in
     # this field will be considered for load balancing. If using
     # :ref:`weighted_clusters
-    # <envoy_api_field_config.route.v4alpha.RouteAction.weighted_clusters>`,
+    # <envoy_v3_api_field_config.route.v3.RouteAction.weighted_clusters>`,
     # metadata will be merged, with values provided there taking precedence. The
     # filter name should be specified as *envoy.lb*.
     metadata_match: "__core_v4_alpha__.Metadata" = betterproto.message_field(4)
@@ -538,19 +574,18 @@ class RouteAction(betterproto.Message):
     # router filter will place the original path before rewrite into the
     # :ref:`x-envoy-original-path <config_http_filters_router_x-envoy-original-
     # path>` header. Only one of *prefix_rewrite* or :ref:`regex_rewrite
-    # <envoy_api_field_config.route.v4alpha.RouteAction.regex_rewrite>` may be
+    # <envoy_v3_api_field_config.route.v3.RouteAction.regex_rewrite>` may be
     # specified. .. attention::   Pay careful attention to the use of trailing
     # slashes in the   :ref:`route's match
-    # <envoy_api_field_config.route.v4alpha.Route.match>` prefix value.
-    # Stripping a prefix from a path requires multiple Routes to handle all
-    # cases. For example,   rewriting */prefix* to */* and */prefix/etc* to
-    # */etc* cannot be done in a single   :ref:`Route
-    # <envoy_api_msg_config.route.v4alpha.Route>`, as shown by the below config
-    # entries:   .. code-block:: yaml     - match:         prefix: "/prefix/"
-    # route:         prefix_rewrite: "/"     - match:         prefix: "/prefix"
-    # route:         prefix_rewrite: "/"   Having above entries in the config,
-    # requests to */prefix* will be stripped to */*, while   requests to
-    # */prefix/etc* will be stripped to */etc*.
+    # <envoy_v3_api_field_config.route.v3.Route.match>` prefix value.   Stripping
+    # a prefix from a path requires multiple Routes to handle all cases. For
+    # example,   rewriting */prefix* to */* and */prefix/etc* to */etc* cannot be
+    # done in a single   :ref:`Route <envoy_v3_api_msg_config.route.v3.Route>`,
+    # as shown by the below config entries:   .. code-block:: yaml     - match:
+    # prefix: "/prefix/"       route:         prefix_rewrite: "/"     - match:
+    # prefix: "/prefix"       route:         prefix_rewrite: "/"   Having above
+    # entries in the config, requests to */prefix* will be stripped to */*, while
+    # requests to */prefix/etc* will be stripped to */etc*.
     prefix_rewrite: str = betterproto.string_field(5)
     # Indicates that during forwarding, portions of the path that match the
     # pattern should be rewritten, even allowing the substitution of capture
@@ -561,7 +596,7 @@ class RouteAction(betterproto.Message):
     # before the rewrite into the :ref:`x-envoy-original-path
     # <config_http_filters_router_x-envoy-original-path>` header. Only one of
     # :ref:`prefix_rewrite
-    # <envoy_api_field_config.route.v4alpha.RouteAction.prefix_rewrite>` or
+    # <envoy_v3_api_field_config.route.v3.RouteAction.prefix_rewrite>` or
     # *regex_rewrite* may be specified. Examples using Google's `RE2
     # <https://github.com/google/re2>`_ engine: * The path pattern
     # ``^/service/([^/]+)(/.*)$`` paired with a substitution   string of
@@ -595,7 +630,8 @@ class RouteAction(betterproto.Message):
     # <config_http_conn_man_headers_custom_request_headers>` header. If header
     # value is empty, host header is left intact. .. attention::   Pay attention
     # to the potential security implications of using this option. Provided
-    # header   must come from trusted source.
+    # header   must come from trusted source. .. note::   If the header appears
+    # multiple times only the first value is used.
     host_rewrite_header: str = betterproto.string_field(
         29, group="host_rewrite_specifier"
     )
@@ -621,20 +657,25 @@ class RouteAction(betterproto.Message):
     timeout: timedelta = betterproto.message_field(8)
     # Specifies the idle timeout for the route. If not specified, there is no
     # per-route idle timeout, although the connection manager wide
-    # :ref:`stream_idle_timeout <envoy_api_field_extensions.filters.network.http_
-    # connection_manager.v4alpha.HttpConnectionManager.stream_idle_timeout>` will
+    # :ref:`stream_idle_timeout <envoy_v3_api_field_extensions.filters.network.ht
+    # tp_connection_manager.v3.HttpConnectionManager.stream_idle_timeout>` will
     # still apply. A value of 0 will completely disable the route's idle timeout,
     # even if a connection manager stream idle timeout is configured. The idle
     # timeout is distinct to :ref:`timeout
-    # <envoy_api_field_config.route.v4alpha.RouteAction.timeout>`, which provides
+    # <envoy_v3_api_field_config.route.v3.RouteAction.timeout>`, which provides
     # an upper bound on the upstream response time; :ref:`idle_timeout
-    # <envoy_api_field_config.route.v4alpha.RouteAction.idle_timeout>` instead
+    # <envoy_v3_api_field_config.route.v3.RouteAction.idle_timeout>` instead
     # bounds the amount of time the request's stream may be idle. After header
     # decoding, the idle timeout will apply on downstream and upstream request
     # events. Each time an encode/decode event for headers or data is processed
     # for the stream, the timer will be reset. If the timeout fires, the stream
     # is terminated with a 408 Request Timeout error code if no upstream response
-    # header has been received, otherwise a stream reset occurs.
+    # header has been received, otherwise a stream reset occurs. If the
+    # :ref:`overload action <config_overload_manager_overload_actions>`
+    # "envoy.overload_actions.reduce_timeouts" is configured, this timeout is
+    # scaled according to the value for :ref:`HTTP_DOWNSTREAM_STREAM_IDLE <envoy_
+    # v3_api_enum_value_config.overload.v3.ScaleTimersOverloadActionConfig.TimerT
+    # ype.HTTP_DOWNSTREAM_STREAM_IDLE>`.
     idle_timeout: timedelta = betterproto.message_field(24)
     # Indicates that the route has a retry policy. Note that if this is set,
     # it'll take precedence over the virtual host level retry policy entirely
@@ -645,7 +686,7 @@ class RouteAction(betterproto.Message):
     # extension. Note that if this is set, it'll take precedence over the virtual
     # host level retry policy entirely (e.g.: policies are not merged, most
     # internal one becomes the enforced policy). :ref:`Retry policy
-    # <envoy_api_field_config.route.v4alpha.VirtualHost.retry_policy>` should not
+    # <envoy_v3_api_field_config.route.v3.VirtualHost.retry_policy>` should not
     # be set if this field is used.
     retry_policy_typed_config: "betterproto_lib_google_protobuf.Any" = (
         betterproto.message_field(33)
@@ -678,8 +719,8 @@ class RouteAction(betterproto.Message):
     upgrade_configs: List["RouteActionUpgradeConfig"] = betterproto.message_field(25)
     # If present, Envoy will try to follow an upstream redirect response instead
     # of proxying the response back to the downstream. An upstream redirect
-    # response is defined by :ref:`redirect_response_codes <envoy_api_field_confi
-    # g.route.v4alpha.InternalRedirectPolicy.redirect_response_codes>`.
+    # response is defined by :ref:`redirect_response_codes <envoy_v3_api_field_co
+    # nfig.route.v3.InternalRedirectPolicy.redirect_response_codes>`.
     internal_redirect_policy: "InternalRedirectPolicy" = betterproto.message_field(34)
     # Indicates that the route has a hedge policy. Note that if this is set,
     # it'll take precedence over the virtual host level hedge policy entirely
@@ -830,9 +871,9 @@ class RouteActionUpgradeConfig(betterproto.Message):
     """
     Allows enabling and disabling upgrades on a per-route basis. This overrides
     any enabled/disabled upgrade filter chain specified in the
-    HttpConnectionManager :ref:`upgrade_configs <envoy_api_field_extensions.fil
-    ters.network.http_connection_manager.v4alpha.HttpConnectionManager.upgrade_
-    configs>` but does not affect any custom filter chain specified there.
+    HttpConnectionManager :ref:`upgrade_configs <envoy_v3_api_field_extensions.
+    filters.network.http_connection_manager.v3.HttpConnectionManager.upgrade_co
+    nfigs>` but does not affect any custom filter chain specified there.
     """
 
     # The case-insensitive name of this upgrade, e.g. "websocket". For each
@@ -843,8 +884,8 @@ class RouteActionUpgradeConfig(betterproto.Message):
     enabled: Optional[bool] = betterproto.message_field(2, wraps=betterproto.TYPE_BOOL)
     # Configuration for sending data upstream as a raw data payload. This is used
     # for CONNECT requests, when forwarding CONNECT payload as raw TCP. Note that
-    # CONNECT support is currently considered alpha in Envoy.
-    # [#comment:TODO(htuch): Replace the above comment with an alpha tag.
+    # CONNECT support is currently considered alpha in Envoy. [#comment:
+    # TODO(htuch): Replace the above comment with an alpha tag.]
     connect_config: "RouteActionUpgradeConfigConnectConfig" = betterproto.message_field(
         3
     )
@@ -854,7 +895,7 @@ class RouteActionUpgradeConfig(betterproto.Message):
 class RouteActionUpgradeConfigConnectConfig(betterproto.Message):
     """
     Configuration for sending data upstream as a raw data payload. This is used
-    for CONNECT requests, when forwarding CONNECT payload as raw TCP.
+    for CONNECT or POST requests, when forwarding request payload as raw TCP.
     """
 
     # If present, the proxy protocol header will be prepended to the CONNECT
@@ -862,18 +903,20 @@ class RouteActionUpgradeConfigConnectConfig(betterproto.Message):
     proxy_protocol_config: "__core_v4_alpha__.ProxyProtocolConfig" = (
         betterproto.message_field(1)
     )
+    # If set, the route will also allow forwarding POST payload as raw TCP.
+    allow_post: bool = betterproto.bool_field(2)
 
 
 @dataclass(eq=False, repr=False)
 class RouteActionMaxStreamDuration(betterproto.Message):
     # Specifies the maximum duration allowed for streams on the route. If not
-    # specified, the value from the :ref:`max_stream_duration <envoy_api_field_co
-    # nfig.core.v4alpha.HttpProtocolOptions.max_stream_duration>` field in
-    # :ref:`HttpConnectionManager.common_http_protocol_options <envoy_api_field_e
-    # xtensions.filters.network.http_connection_manager.v4alpha.HttpConnectionMan
-    # ager.common_http_protocol_options>` is used. If this field is set
-    # explicitly to zero, any HttpConnectionManager max_stream_duration timeout
-    # will be disabled for this route.
+    # specified, the value from the :ref:`max_stream_duration <envoy_v3_api_field
+    # _config.core.v3.HttpProtocolOptions.max_stream_duration>` field in
+    # :ref:`HttpConnectionManager.common_http_protocol_options <envoy_v3_api_fiel
+    # d_extensions.filters.network.http_connection_manager.v3.HttpConnectionManag
+    # er.common_http_protocol_options>` is used. If this field is set explicitly
+    # to zero, any HttpConnectionManager max_stream_duration timeout will be
+    # disabled for this route.
     max_stream_duration: timedelta = betterproto.message_field(1)
     # If present, and the request contains a `grpc-timeout header
     # <https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md>`_, use
@@ -913,11 +956,10 @@ class RetryPolicy(betterproto.Message):
     # :ref:`config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`
     # apply. .. note::   If left unspecified, Envoy will use the global
     # :ref:`route timeout
-    # <envoy_api_field_config.route.v4alpha.RouteAction.timeout>` for the
-    # request.   Consequently, when using a :ref:`5xx
-    # <config_http_filters_router_x-envoy-retry-on>` based   retry policy, a
-    # request that times out will not be retried as the total timeout budget
-    # would have been exhausted.
+    # <envoy_v3_api_field_config.route.v3.RouteAction.timeout>` for the request.
+    # Consequently, when using a :ref:`5xx <config_http_filters_router_x-envoy-
+    # retry-on>` based   retry policy, a request that times out will not be
+    # retried as the total timeout budget   would have been exhausted.
     per_try_timeout: timedelta = betterproto.message_field(3)
     # Specifies an implementation of a RetryPriority which is used to determine
     # the distribution of load across priorities used for retries. Refer to
@@ -999,7 +1041,10 @@ class RetryPolicyRetryBackOff(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class RetryPolicyResetHeader(betterproto.Message):
+    # The name of the reset header. .. note::   If the header appears multiple
+    # times only the first value is used.
     name: str = betterproto.string_field(1)
+    # The format of the reset header.
     format: "RetryPolicyResetHeaderFormat" = betterproto.enum_field(2)
 
 
@@ -1063,18 +1108,24 @@ class HedgePolicy(betterproto.Message):
         betterproto.message_field(2)
     )
     # Indicates that a hedged request should be sent when the per-try timeout is
-    # hit. This will only occur if the retry policy also indicates that a timed
-    # out request should be retried. Once a timed out request is retried due to
-    # per try timeout, the router filter will ensure that it is not retried again
-    # even if the returned response headers would otherwise be retried according
-    # the specified :ref:`RetryPolicy
-    # <envoy_api_msg_config.route.v4alpha.RetryPolicy>`. Defaults to false.
+    # hit. This means that a retry will be issued without resetting the original
+    # request, leaving multiple upstream requests in flight. The first request to
+    # complete successfully will be the one returned to the caller. * At any
+    # time, a successful response (i.e. not triggering any of the retry-on
+    # conditions) would be returned to the client. * Before per-try timeout, an
+    # error response (per retry-on conditions) would be retried immediately or
+    # returned ot the client   if there are no more retries left. * After per-try
+    # timeout, an error response would be discarded, as a retry in the form of a
+    # hedged request is already in progress. Note: For this to have effect, you
+    # must have a :ref:`RetryPolicy
+    # <envoy_v3_api_msg_config.route.v3.RetryPolicy>` that retries at least one
+    # error code and specifies a maximum number of retries. Defaults to false.
     hedge_on_per_try_timeout: bool = betterproto.bool_field(3)
 
 
 @dataclass(eq=False, repr=False)
 class RedirectAction(betterproto.Message):
-    """[#next-free-field: 9]"""
+    """[#next-free-field: 10]"""
 
     # The scheme portion of the URL will be swapped with "https".
     https_redirect: bool = betterproto.bool_field(4, group="scheme_rewrite_specifier")
@@ -1100,8 +1151,27 @@ class RedirectAction(betterproto.Message):
     # swapped with this value. This option allows redirect URLs be dynamically
     # created based on the request. .. attention::   Pay attention to the use of
     # trailing slashes as mentioned in   :ref:`RouteAction's prefix_rewrite
-    # <envoy_api_field_config.route.v4alpha.RouteAction.prefix_rewrite>`.
+    # <envoy_v3_api_field_config.route.v3.RouteAction.prefix_rewrite>`.
     prefix_rewrite: str = betterproto.string_field(5, group="path_rewrite_specifier")
+    # Indicates that during redirect, portions of the path that match the pattern
+    # should be rewritten, even allowing the substitution of capture groups from
+    # the pattern into the new path as specified by the rewrite substitution
+    # string. This is useful to allow application paths to be rewritten in a way
+    # that is aware of segments with variable content like identifiers. Examples
+    # using Google's `RE2 <https://github.com/google/re2>`_ engine: * The path
+    # pattern ``^/service/([^/]+)(/.*)$`` paired with a substitution   string of
+    # ``\2/instance/\1`` would transform ``/service/foo/v1/api``   into
+    # ``/v1/api/instance/foo``. * The pattern ``one`` paired with a substitution
+    # string of ``two`` would   transform ``/xxx/one/yyy/one/zzz`` into
+    # ``/xxx/two/yyy/two/zzz``. * The pattern ``^(.*?)one(.*)$`` paired with a
+    # substitution string of   ``\1two\2`` would replace only the first
+    # occurrence of ``one``,   transforming path ``/xxx/one/yyy/one/zzz`` into
+    # ``/xxx/two/yyy/one/zzz``. * The pattern ``(?i)/xxx/`` paired with a
+    # substitution string of ``/yyy/``   would do a case-insensitive match and
+    # transform path ``/aaa/XxX/bbb`` to   ``/aaa/yyy/bbb``.
+    regex_rewrite: "___type_matcher_v4_alpha__.RegexMatchAndSubstitute" = (
+        betterproto.message_field(9, group="path_rewrite_specifier")
+    )
     # The HTTP status code to use in the redirect response. The default response
     # code is MOVED_PERMANENTLY (301).
     response_code: "RedirectActionRedirectResponseCode" = betterproto.enum_field(3)
@@ -1117,10 +1187,17 @@ class DirectResponseAction(betterproto.Message):
     # Specifies the content of the response body. If this setting is omitted, no
     # body is included in the generated response. .. note::   Headers can be
     # specified using *response_headers_to_add* in the enclosing
-    # :ref:`envoy_api_msg_config.route.v4alpha.Route`,
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteConfiguration` or
-    # :ref:`envoy_api_msg_config.route.v4alpha.VirtualHost`.
+    # :ref:`envoy_v3_api_msg_config.route.v3.Route`,
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteConfiguration` or
+    # :ref:`envoy_v3_api_msg_config.route.v3.VirtualHost`.
     body: "__core_v4_alpha__.DataSource" = betterproto.message_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class NonForwardingAction(betterproto.Message):
+    """[#not-implemented-hide:]"""
+
+    pass
 
 
 @dataclass(eq=False, repr=False)
@@ -1166,11 +1243,11 @@ class Tracing(betterproto.Message):
     overall_sampling: "___type_v3__.FractionalPercent" = betterproto.message_field(3)
     # A list of custom tags with unique tag name to create tags for the active
     # span. It will take effect after merging with the :ref:`corresponding
-    # configuration <envoy_api_field_extensions.filters.network.http_connection_m
-    # anager.v4alpha.HttpConnectionManager.Tracing.custom_tags>` configured in
-    # the HTTP connection manager. If two tags with the same name are configured
-    # each in the HTTP connection manager and the route level, the one configured
-    # here takes priority.
+    # configuration <envoy_v3_api_field_extensions.filters.network.http_connectio
+    # n_manager.v3.HttpConnectionManager.Tracing.custom_tags>` configured in the
+    # HTTP connection manager. If two tags with the same name are configured each
+    # in the HTTP connection manager and the route level, the one configured here
+    # takes priority.
     custom_tags: List["___type_tracing_v3__.CustomTag"] = betterproto.message_field(4)
 
 
@@ -1208,7 +1285,9 @@ class VirtualCluster(betterproto.Message):
 class RateLimit(betterproto.Message):
     """
     Global rate limiting :ref:`architecture overview
-    <arch_overview_global_rate_limit>`.
+    <arch_overview_global_rate_limit>`. Also applies to Local rate limiting
+    :ref:`using descriptors
+    <config_http_filters_local_rate_limit_descriptors>`.
     """
 
     # Refers to the stage set in the filter. The rate limit configuration only
@@ -1236,7 +1315,7 @@ class RateLimit(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class RateLimitAction(betterproto.Message):
-    """[#next-free-field: 8]"""
+    """[#next-free-field: 10]"""
 
     # Rate limit on source cluster.
     source_cluster: "RateLimitActionSourceCluster" = betterproto.message_field(
@@ -1262,9 +1341,14 @@ class RateLimitAction(betterproto.Message):
     header_value_match: "RateLimitActionHeaderValueMatch" = betterproto.message_field(
         6, group="action_specifier"
     )
-    # Rate limit on dynamic metadata.
-    dynamic_metadata: "RateLimitActionDynamicMetaData" = betterproto.message_field(
-        7, group="action_specifier"
+    # Rate limit on metadata.
+    metadata: "RateLimitActionMetaData" = betterproto.message_field(
+        8, group="action_specifier"
+    )
+    # Rate limit descriptor extension. See the rate limit descriptor extensions
+    # documentation. [#extension-category: envoy.rate_limit_descriptors]
+    extension: "__core_v4_alpha__.TypedExtensionConfig" = betterproto.message_field(
+        9, group="action_specifier"
     )
 
 
@@ -1286,14 +1370,14 @@ class RateLimitActionDestinationCluster(betterproto.Message):
     block:: cpp   ("destination_cluster", "<routed target cluster>") Once a
     request matches against a route table rule, a routed cluster is determined
     by one of the following :ref:`route table configuration
-    <envoy_api_msg_config.route.v4alpha.RouteConfiguration>` settings: *
-    :ref:`cluster <envoy_api_field_config.route.v4alpha.RouteAction.cluster>`
+    <envoy_v3_api_msg_config.route.v3.RouteConfiguration>` settings: *
+    :ref:`cluster <envoy_v3_api_field_config.route.v3.RouteAction.cluster>`
     indicates the upstream cluster   to route to. * :ref:`weighted_clusters
-    <envoy_api_field_config.route.v4alpha.RouteAction.weighted_clusters>`
+    <envoy_v3_api_field_config.route.v3.RouteAction.weighted_clusters>`
     chooses a cluster randomly from a set of clusters with attributed weight. *
     :ref:`cluster_header
-    <envoy_api_field_config.route.v4alpha.RouteAction.cluster_header>`
-    indicates which   header in the request contains the target cluster.
+    <envoy_v3_api_field_config.route.v3.RouteAction.cluster_header>` indicates
+    which   header in the request contains the target cluster.
     """
 
     pass
@@ -1373,9 +1457,12 @@ class RateLimitActionHeaderValueMatch(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class RateLimitActionDynamicMetaData(betterproto.Message):
     """
-    The following descriptor entry is appended when the dynamic metadata
-    contains a key value: .. code-block:: cpp   ("<descriptor_key>",
-    "<value_queried_from_metadata>")
+    The following descriptor entry is appended when the :ref:`dynamic metadata
+    <well_known_dynamic_metadata>` contains a key value: .. code-block:: cpp
+    ("<descriptor_key>", "<value_queried_from_dynamic_metadata>") ..
+    attention::   This action has been deprecated in favor of the
+    :ref:`metadata
+    <envoy_v3_api_msg_config.route.v3.RateLimit.Action.MetaData>` action
     """
 
     # The key to use in the descriptor entry.
@@ -1387,6 +1474,26 @@ class RateLimitActionDynamicMetaData(betterproto.Message):
     # An optional value to use if *metadata_key* is empty. If not set and no
     # value is present under the metadata_key then no descriptor is generated.
     default_value: str = betterproto.string_field(3)
+
+
+@dataclass(eq=False, repr=False)
+class RateLimitActionMetaData(betterproto.Message):
+    """
+    The following descriptor entry is appended when the metadata contains a key
+    value: .. code-block:: cpp   ("<descriptor_key>",
+    "<value_queried_from_metadata>")
+    """
+
+    # The key to use in the descriptor entry.
+    descriptor_key: str = betterproto.string_field(1)
+    # Metadata struct that defines the key and path to retrieve the string value.
+    # A match will only happen if the value in the metadata is of type string.
+    metadata_key: "___type_metadata_v3__.MetadataKey" = betterproto.message_field(2)
+    # An optional value to use if *metadata_key* is empty. If not set and no
+    # value is present under the metadata_key then no descriptor is generated.
+    default_value: str = betterproto.string_field(3)
+    # Source of metadata
+    source: "RateLimitActionMetaDataSource" = betterproto.enum_field(4)
 
 
 @dataclass(eq=False, repr=False)
@@ -1404,7 +1511,7 @@ class RateLimitOverrideDynamicMetadata(betterproto.Message):
     # Metadata struct that defines the key and path to retrieve the struct value.
     # The value must be a struct containing an integer "requests_per_unit"
     # property and a "unit" property with a value parseable to
-    # :ref:`RateLimitUnit enum <envoy_api_enum_type.v3.RateLimitUnit>`
+    # :ref:`RateLimitUnit enum <envoy_v3_api_enum_type.v3.RateLimitUnit>`
     metadata_key: "___type_metadata_v3__.MetadataKey" = betterproto.message_field(1)
 
 
@@ -1419,12 +1526,11 @@ class HeaderMatcher(betterproto.Message):
     block:: json     {       "name": ":method",       "exact_match": "POST"
     } .. attention::   In the absence of any header match specifier, match will
     default to :ref:`present_match
-    <envoy_api_field_config.route.v4alpha.HeaderMatcher.present_match>`. i.e, a
+    <envoy_v3_api_field_config.route.v3.HeaderMatcher.present_match>`. i.e, a
     request that has the :ref:`name
-    <envoy_api_field_config.route.v4alpha.HeaderMatcher.name>` header will
-    match, regardless of the header's   value.  [#next-major-version:
-    HeaderMatcher should be refactored to use StringMatcher.] [#next-free-
-    field: 13]
+    <envoy_v3_api_field_config.route.v3.HeaderMatcher.name>` header will match,
+    regardless of the header's   value.  [#next-major-version: HeaderMatcher
+    should be refactored to use StringMatcher.] [#next-free-field: 13]
     """
 
     # Specifies the name of the header in the request.
@@ -1450,8 +1556,9 @@ class HeaderMatcher(betterproto.Message):
     range_match: "___type_v3__.Int64Range" = betterproto.message_field(
         6, group="header_match_specifier"
     )
-    # If specified, header match will be performed based on whether the header is
-    # in the request.
+    # If specified as true, header match will be performed based on whether the
+    # header is in the request. If specified as false, header match will be
+    # performed based on whether the header is absent.
     present_match: bool = betterproto.bool_field(7, group="header_match_specifier")
     # If specified, header match will be performed based on the prefix of the
     # header value. Note: empty prefix is not allowed, please use present_match
@@ -1507,9 +1614,10 @@ class InternalRedirectPolicy(betterproto.Message):
     # redirects that a downstream request has encountered is lower than this
     # value. In the case where a downstream request is bounced among multiple
     # routes by internal redirect, the first route that hits this threshold, or
-    # does not set :ref:`internal_redirect_policy <envoy_api_field_config.route.v
-    # 4alpha.RouteAction.internal_redirect_policy>` will pass the redirect back
-    # to downstream. If not specified, at most one redirect will be followed.
+    # does not set :ref:`internal_redirect_policy
+    # <envoy_v3_api_field_config.route.v3.RouteAction.internal_redirect_policy>`
+    # will pass the redirect back to downstream. If not specified, at most one
+    # redirect will be followed.
     max_internal_redirects: Optional[int] = betterproto.message_field(
         1, wraps=betterproto.TYPE_UINT32
     )
@@ -1521,7 +1629,8 @@ class InternalRedirectPolicy(betterproto.Message):
     # Specifies a list of predicates that are queried when an upstream response
     # is deemed to trigger an internal redirect by all other criteria. Any
     # predicate in the list can reject the redirect, causing the response to be
-    # proxied to downstream.
+    # proxied to downstream. [#extension-category:
+    # envoy.internal_redirect_predicates]
     predicates: List[
         "__core_v4_alpha__.TypedExtensionConfig"
     ] = betterproto.message_field(3)
@@ -1531,13 +1640,34 @@ class InternalRedirectPolicy(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class FilterConfig(betterproto.Message):
+    """
+    A simple wrapper for an HTTP filter config. This is intended to be used as
+    a wrapper for the map value in :ref:`VirtualHost.typed_per_filter_config<en
+    voy_v3_api_field_config.route.v3.VirtualHost.typed_per_filter_config>`, :re
+    f:`Route.typed_per_filter_config<envoy_v3_api_field_config.route.v3.Route.t
+    yped_per_filter_config>`, or :ref:`WeightedCluster.ClusterWeight.typed_per_
+    filter_config<envoy_v3_api_field_config.route.v3.WeightedCluster.ClusterWei
+    ght.typed_per_filter_config>` to add additional flags to the filter. [#not-
+    implemented-hide:]
+    """
+
+    # The filter config.
+    config: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(1)
+    # If true, the filter is optional, meaning that if the client does not
+    # support the specified filter, it may ignore the map entry rather than
+    # rejecting the config.
+    is_optional: bool = betterproto.bool_field(2)
+
+
+@dataclass(eq=False, repr=False)
 class RouteConfiguration(betterproto.Message):
-    """[#next-free-field: 11]"""
+    """[#next-free-field: 13]"""
 
     # The name of the route configuration. For example, it might match
-    # :ref:`route_config_name <envoy_api_field_extensions.filters.network.http_co
-    # nnection_manager.v4alpha.Rds.route_config_name>` in :ref:`envoy_api_msg_ext
-    # ensions.filters.network.http_connection_manager.v4alpha.Rds`.
+    # :ref:`route_config_name <envoy_v3_api_field_extensions.filters.network.http
+    # _connection_manager.v3.Rds.route_config_name>` in :ref:`envoy_v3_api_msg_ex
+    # tensions.filters.network.http_connection_manager.v3.Rds`.
     name: str = betterproto.string_field(1)
     # An array of virtual hosts that make up the route table.
     virtual_hosts: List["VirtualHost"] = betterproto.message_field(2)
@@ -1557,10 +1687,10 @@ class RouteConfiguration(betterproto.Message):
     # Specifies a list of HTTP headers that should be added to each response that
     # the connection manager encodes. Headers specified at this level are applied
     # after headers from any enclosed
-    # :ref:`envoy_api_msg_config.route.v4alpha.VirtualHost` or
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteAction`. For more
-    # information, including details on header value syntax, see the
-    # documentation on :ref:`custom request headers
+    # :ref:`envoy_v3_api_msg_config.route.v3.VirtualHost` or
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteAction`. For more information,
+    # including details on header value syntax, see the documentation on
+    # :ref:`custom request headers
     # <config_http_conn_man_headers_custom_request_headers>`.
     response_headers_to_add: List[
         "__core_v4_alpha__.HeaderValueOption"
@@ -1571,10 +1701,10 @@ class RouteConfiguration(betterproto.Message):
     # Specifies a list of HTTP headers that should be added to each request
     # routed by the HTTP connection manager. Headers specified at this level are
     # applied after headers from any enclosed
-    # :ref:`envoy_api_msg_config.route.v4alpha.VirtualHost` or
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteAction`. For more
-    # information, including details on header value syntax, see the
-    # documentation on :ref:`custom request headers
+    # :ref:`envoy_v3_api_msg_config.route.v3.VirtualHost` or
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteAction`. For more information,
+    # including details on header value syntax, see the documentation on
+    # :ref:`custom request headers
     # <config_http_conn_man_headers_custom_request_headers>`.
     request_headers_to_add: List[
         "__core_v4_alpha__.HeaderValueOption"
@@ -1594,16 +1724,42 @@ class RouteConfiguration(betterproto.Message):
     # load. If set to false and a route refers to a non-existent cluster, the
     # route table will load and the router filter will return a 404 if the route
     # is selected at runtime. This setting defaults to true if the route table is
-    # statically defined via the :ref:`route_config <envoy_api_field_extensions.f
-    # ilters.network.http_connection_manager.v4alpha.HttpConnectionManager.route_
-    # config>` option. This setting default to false if the route table is loaded
-    # dynamically via the :ref:`rds <envoy_api_field_extensions.filters.network.h
-    # ttp_connection_manager.v4alpha.HttpConnectionManager.rds>` option. Users
-    # may wish to override the default behavior in certain cases (for example
-    # when using CDS with a static route table).
+    # statically defined via the :ref:`route_config <envoy_v3_api_field_extension
+    # s.filters.network.http_connection_manager.v3.HttpConnectionManager.route_co
+    # nfig>` option. This setting default to false if the route table is loaded
+    # dynamically via the :ref:`rds <envoy_v3_api_field_extensions.filters.networ
+    # k.http_connection_manager.v3.HttpConnectionManager.rds>` option. Users may
+    # wish to override the default behavior in certain cases (for example when
+    # using CDS with a static route table).
     validate_clusters: Optional[bool] = betterproto.message_field(
         7, wraps=betterproto.TYPE_BOOL
     )
+    # The maximum bytes of the response :ref:`direct response body
+    # <envoy_v3_api_field_config.route.v3.DirectResponseAction.body>` size. If
+    # not specified the default is 4096. .. warning::   Envoy currently holds the
+    # content of :ref:`direct response body
+    # <envoy_v3_api_field_config.route.v3.DirectResponseAction.body>` in memory.
+    # Be careful setting   this to be larger than the default 4KB, since the
+    # allocated memory for direct response body   is not subject to data plane
+    # buffering controls.
+    max_direct_response_body_size_bytes: Optional[int] = betterproto.message_field(
+        11, wraps=betterproto.TYPE_UINT32
+    )
+    # [#not-implemented-hide:] A list of plugins and their configurations which
+    # may be used by a :ref:`envoy_v3_api_field_config.route.v3.RouteAction.clust
+    # er_specifier_plugin` within the route. All *extension.name* fields in this
+    # list must be unique.
+    cluster_specifier_plugins: List[
+        "ClusterSpecifierPlugin"
+    ] = betterproto.message_field(12)
+
+
+@dataclass(eq=False, repr=False)
+class ClusterSpecifierPlugin(betterproto.Message):
+    """Configuration for a cluster specifier plugin."""
+
+    # The name of the plugin and its opaque configuration.
+    extension: "__core_v4_alpha__.TypedExtensionConfig" = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
@@ -1616,28 +1772,28 @@ class Vhds(betterproto.Message):
 class ScopedRouteConfiguration(betterproto.Message):
     """
     Specifies a routing scope, which associates a
-    :ref:`Key<envoy_api_msg_config.route.v4alpha.ScopedRouteConfiguration.Key>`
-    to a :ref:`envoy_api_msg_config.route.v4alpha.RouteConfiguration`
-    (identified by its resource name). The HTTP connection manager builds up a
-    table consisting of these Key to RouteConfiguration mappings, and looks up
-    the RouteConfiguration to use per request according to the algorithm
-    specified in the :ref:`scope_key_builder<envoy_api_field_extensions.filters
-    .network.http_connection_manager.v4alpha.ScopedRoutes.scope_key_builder>`
-    assigned to the HttpConnectionManager. For example, with the following
-    configurations (in YAML): HttpConnectionManager config: .. code::   ...
-    scoped_routes:     name: foo-scoped-routes     scope_key_builder:
-    fragments:         - header_value_extractor:             name: X-Route-
-    Selector             element_separator: ,             element:
-    separator: =               key: vip ScopedRouteConfiguration resources
-    (specified statically via :ref:`scoped_route_configurations_list<envoy_api_
-    field_extensions.filters.network.http_connection_manager.v4alpha.ScopedRout
-    es.scoped_route_configurations_list>` or obtained dynamically via SRDS): ..
-    code::  (1)   name: route-scope1   route_configuration_name: route-config1
-    key:      fragments:        - string_key: 172.10.10.20  (2)   name: route-
-    scope2   route_configuration_name: route-config2   key:     fragments:
-    - string_key: 172.20.20.30 A request from a client such as: .. code::
-    GET / HTTP/1.1     Host: foo.com     X-Route-Selector: vip=172.10.10.20
-    would result in the routing table defined by the `route-config1`
+    :ref:`Key<envoy_v3_api_msg_config.route.v3.ScopedRouteConfiguration.Key>`
+    to a :ref:`envoy_v3_api_msg_config.route.v3.RouteConfiguration` (identified
+    by its resource name). The HTTP connection manager builds up a table
+    consisting of these Key to RouteConfiguration mappings, and looks up the
+    RouteConfiguration to use per request according to the algorithm specified
+    in the :ref:`scope_key_builder<envoy_v3_api_field_extensions.filters.networ
+    k.http_connection_manager.v3.ScopedRoutes.scope_key_builder>` assigned to
+    the HttpConnectionManager. For example, with the following configurations
+    (in YAML): HttpConnectionManager config: .. code::   ...   scoped_routes:
+    name: foo-scoped-routes     scope_key_builder:       fragments:         -
+    header_value_extractor:             name: X-Route-Selector
+    element_separator: ,             element:               separator: =
+    key: vip ScopedRouteConfiguration resources (specified statically via :ref:
+    `scoped_route_configurations_list<envoy_v3_api_field_extensions.filters.net
+    work.http_connection_manager.v3.ScopedRoutes.scoped_route_configurations_li
+    st>` or obtained dynamically via SRDS): .. code::  (1)   name: route-scope1
+    route_configuration_name: route-config1   key:      fragments:        -
+    string_key: 172.10.10.20  (2)   name: route-scope2
+    route_configuration_name: route-config2   key:     fragments:       -
+    string_key: 172.20.20.30 A request from a client such as: .. code::     GET
+    / HTTP/1.1     Host: foo.com     X-Route-Selector: vip=172.10.10.20 would
+    result in the routing table defined by the `route-config1`
     RouteConfiguration being assigned to the HTTP request/stream.
     """
 
@@ -1646,10 +1802,10 @@ class ScopedRouteConfiguration(betterproto.Message):
     # The name assigned to the routing scope.
     name: str = betterproto.string_field(1)
     # The resource name to use for a
-    # :ref:`envoy_api_msg_service.discovery.v4alpha.DiscoveryRequest` to an RDS
+    # :ref:`envoy_v3_api_msg_service.discovery.v3.DiscoveryRequest` to an RDS
     # server to fetch the
-    # :ref:`envoy_api_msg_config.route.v4alpha.RouteConfiguration` associated
-    # with this scope.
+    # :ref:`envoy_v3_api_msg_config.route.v3.RouteConfiguration` associated with
+    # this scope.
     route_configuration_name: str = betterproto.string_field(2)
     # The key to match against.
     key: "ScopedRouteConfigurationKey" = betterproto.message_field(3)
@@ -1659,16 +1815,16 @@ class ScopedRouteConfiguration(betterproto.Message):
 class ScopedRouteConfigurationKey(betterproto.Message):
     """
     Specifies a key which is matched against the output of the :ref:`scope_key_
-    builder<envoy_api_field_extensions.filters.network.http_connection_manager.
-    v4alpha.ScopedRoutes.scope_key_builder>` specified in the
+    builder<envoy_v3_api_field_extensions.filters.network.http_connection_manag
+    er.v3.ScopedRoutes.scope_key_builder>` specified in the
     HttpConnectionManager. The matching is done per HTTP request and is
     dependent on the order of the fragments contained in the Key.
     """
 
     # The ordered set of fragments to match against. The order must match the
-    # fragments in the corresponding :ref:`scope_key_builder<envoy_api_field_exte
-    # nsions.filters.network.http_connection_manager.v4alpha.ScopedRoutes.scope_k
-    # ey_builder>`.
+    # fragments in the corresponding :ref:`scope_key_builder<envoy_v3_api_field_e
+    # xtensions.filters.network.http_connection_manager.v3.ScopedRoutes.scope_key
+    # _builder>`.
     fragments: List["ScopedRouteConfigurationKeyFragment"] = betterproto.message_field(
         1
     )

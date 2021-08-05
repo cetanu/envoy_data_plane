@@ -10,7 +10,7 @@ from betterproto.grpc.grpclib_server import ServiceBase
 
 @dataclass(eq=False, repr=False)
 class Router(betterproto.Message):
-    """[#next-free-field: 7]"""
+    """[#next-free-field: 8]"""
 
     # Whether the router generates dynamic cluster statistics. Defaults to true.
     # Can be disabled in high performance scenarios.
@@ -49,6 +49,14 @@ class Router(betterproto.Message):
     # envoy-expected-rq-timeout-ms` header, populated by egress Envoy, when
     # deriving timeout for upstream cluster.
     respect_expected_rq_timeout: bool = betterproto.bool_field(6)
+    # If set, Envoy will avoid incrementing HTTP failure code stats on gRPC
+    # requests. This includes the individual status code value (e.g.
+    # upstream_rq_504) and group stats (e.g. upstream_rq_5xx). This field is
+    # useful if interested in relying only on the gRPC stats filter to define
+    # success and failure metrics for gRPC requests as not all failed gRPC
+    # requests charge HTTP status code metrics. See :ref:`gRPC stats
+    # filter<config_http_filters_grpc_stats>` documentation for more details.
+    suppress_grpc_request_failure_code_stats: bool = betterproto.bool_field(7)
 
 
 from ......config.accesslog import v3 as _____config_accesslog_v3__

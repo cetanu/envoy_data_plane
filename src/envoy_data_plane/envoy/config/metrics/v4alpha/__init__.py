@@ -13,15 +13,9 @@ class StatsSink(betterproto.Message):
     """Configuration for pluggable stats sinks."""
 
     # The name of the stats sink to instantiate. The name must match a supported
-    # stats sink. The built-in stats sinks are: * :ref:`envoy.stat_sinks.statsd
-    # <envoy_api_msg_config.metrics.v4alpha.StatsdSink>` *
-    # :ref:`envoy.stat_sinks.dog_statsd
-    # <envoy_api_msg_config.metrics.v4alpha.DogStatsdSink>` *
-    # :ref:`envoy.stat_sinks.metrics_service
-    # <envoy_api_msg_config.metrics.v4alpha.MetricsServiceConfig>` *
-    # :ref:`envoy.stat_sinks.hystrix
-    # <envoy_api_msg_config.metrics.v4alpha.HystrixSink>` Sinks optionally
-    # support tagged/multiple dimensional metrics.
+    # stats sink. See the :ref:`extensions listed in typed_config below
+    # <extension_category_envoy.stats_sinks>` for the default list of available
+    # stats sink. Sinks optionally support tagged/multiple dimensional metrics.
     name: str = betterproto.string_field(1)
     typed_config: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(
         3, group="config_type"
@@ -34,12 +28,12 @@ class StatsConfig(betterproto.Message):
 
     # Each stat name is iteratively processed through these tag specifiers. When
     # a tag is matched, the first capture group is removed from the name so later
-    # :ref:`TagSpecifiers <envoy_api_msg_config.metrics.v4alpha.TagSpecifier>`
+    # :ref:`TagSpecifiers <envoy_v3_api_msg_config.metrics.v3.TagSpecifier>`
     # cannot match that same portion of the match.
     stats_tags: List["TagSpecifier"] = betterproto.message_field(1)
     # Use all default tag regexes specified in Envoy. These can be combined with
     # custom tags specified in :ref:`stats_tags
-    # <envoy_api_field_config.metrics.v4alpha.StatsConfig.stats_tags>`. They will
+    # <envoy_v3_api_field_config.metrics.v3.StatsConfig.stats_tags>`. They will
     # be processed before the custom tags. .. note::   If any default tags are
     # specified twice, the config will be considered   invalid. See
     # :repo:`well_known_names.h <source/common/config/well_known_names.h>` for a
@@ -102,11 +96,11 @@ class TagSpecifier(betterproto.Message):
     # portions of existing stats, which can be found in :repo:`well_known_names.h
     # <source/common/config/well_known_names.h>` in the Envoy repository. If a
     # :ref:`tag_name
-    # <envoy_api_field_config.metrics.v4alpha.TagSpecifier.tag_name>` is provided
+    # <envoy_v3_api_field_config.metrics.v3.TagSpecifier.tag_name>` is provided
     # in the config and neither :ref:`regex
-    # <envoy_api_field_config.metrics.v4alpha.TagSpecifier.regex>` or
+    # <envoy_v3_api_field_config.metrics.v3.TagSpecifier.regex>` or
     # :ref:`fixed_value
-    # <envoy_api_field_config.metrics.v4alpha.TagSpecifier.fixed_value>` were
+    # <envoy_v3_api_field_config.metrics.v3.TagSpecifier.fixed_value>` were
     # specified, Envoy will attempt to find that name in its set of defaults and
     # use the accompanying regex. .. note::   It is invalid to specify the same
     # tag name twice in a config.
@@ -198,7 +192,7 @@ class DogStatsdSink(betterproto.Message):
     sink. The sink emits stats with `DogStatsD
     <https://docs.datadoghq.com/guides/dogstatsd/>`_ compatible tags. Tags are
     configurable via :ref:`StatsConfig
-    <envoy_api_msg_config.metrics.v4alpha.StatsConfig>`. [#extension:
+    <envoy_v3_api_msg_config.metrics.v3.StatsConfig>`. [#extension:
     envoy.stat_sinks.dog_statsd]
     """
 
@@ -208,8 +202,7 @@ class DogStatsdSink(betterproto.Message):
         1, group="dog_statsd_specifier"
     )
     # Optional custom metric name prefix. See :ref:`StatsdSink's prefix field
-    # <envoy_api_field_config.metrics.v4alpha.StatsdSink.prefix>` for more
-    # details.
+    # <envoy_v3_api_field_config.metrics.v3.StatsdSink.prefix>` for more details.
     prefix: str = betterproto.string_field(3)
     # Optional max datagram size to use when sending UDP messages. By default
     # Envoy will emit one metric per datagram. By specifying a max-size larger
@@ -250,8 +243,8 @@ class MetricsServiceConfig(betterproto.Message):
     """
     Metrics Service is configured as a built-in
     *envoy.stat_sinks.metrics_service* :ref:`StatsSink
-    <envoy_api_msg_config.metrics.v4alpha.StatsSink>`. This opaque
-    configuration will be used to create Metrics Service. [#extension:
+    <envoy_v3_api_msg_config.metrics.v3.StatsSink>`. This opaque configuration
+    will be used to create Metrics Service. [#extension:
     envoy.stat_sinks.metrics_service]
     """
 
@@ -264,10 +257,15 @@ class MetricsServiceConfig(betterproto.Message):
     # Otherwise, the current counter value is reported. Defaults to false.
     # Eventually (https://github.com/envoyproxy/envoy/issues/10968) if this value
     # is not set, the sink will take updates from the :ref:`MetricsResponse
-    # <envoy_api_msg_service.metrics.v4alpha.StreamMetricsResponse>`.
+    # <envoy_v3_api_msg_service.metrics.v3.StreamMetricsResponse>`.
     report_counters_as_deltas: Optional[bool] = betterproto.message_field(
         2, wraps=betterproto.TYPE_BOOL
     )
+    # If true, metrics will have their tags emitted as labels on the metrics
+    # objects sent to the MetricsService, and the tag extracted name will be used
+    # instead of the full name, which may contain values used by the tag
+    # extractor or additional tags added during stats creation.
+    emit_tags_as_labels: bool = betterproto.bool_field(4)
 
 
 from ....type.matcher import v4alpha as ___type_matcher_v4_alpha__

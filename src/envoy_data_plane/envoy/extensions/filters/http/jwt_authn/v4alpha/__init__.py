@@ -17,22 +17,35 @@ class JwtProvider(betterproto.Message):
     Framework <https://tools.ietf.org/html/rfc6749>`_ * `OpenID Connect
     <http://openid.net/connect>`_ A JwtProvider message specifies how a JSON
     Web Token (JWT) can be verified. It specifies: * issuer: the principal that
-    issues the JWT. It has to match the one from the token. * allowed
-    audiences: the ones in the token have to be listed here. * how to fetch
-    public key JWKS to verify the token signature. * how to extract JWT token
-    in the request. * how to pass successfully verified token payload. Example:
-    .. code-block:: yaml     issuer: https://example.com     audiences:     -
-    bookstore_android.apps.googleusercontent.com     -
+    issues the JWT. If specified, it has to match the *iss* field in JWT. *
+    allowed audiences: the ones in the token have to be listed here. * how to
+    fetch public key JWKS to verify the token signature. * how to extract JWT
+    token in the request. * how to pass successfully verified token payload.
+    Example: .. code-block:: yaml     issuer: https://example.com
+    audiences:     - bookstore_android.apps.googleusercontent.com     -
     bookstore_web.apps.googleusercontent.com     remote_jwks:       http_uri:
     uri: https://example.com/.well-known/jwks.json         cluster:
-    example_jwks_cluster       cache_duration:         seconds: 300 [#next-
-    free-field: 10]
+    example_jwks_cluster         timeout: 1s       cache_duration:
+    seconds: 300 [#next-free-field: 12]
     """
 
     # Specify the `principal
     # <https://tools.ietf.org/html/rfc7519#section-4.1.1>`_ that issued the JWT,
-    # usually a URL or an email address. Example: https://securetoken.google.com
-    # Example: 1234567-compute@developer.gserviceaccount.com
+    # usually a URL or an email address. It is optional. If specified, it has to
+    # match the *iss* field in JWT. If a JWT has *iss* field and this field is
+    # specified, they have to match, otherwise the JWT *iss* field is not
+    # checked. Note: *JwtRequirement* :ref:`allow_missing <envoy_v3_api_field_ext
+    # ensions.filters.http.jwt_authn.v3.JwtRequirement.allow_missing>` and
+    # :ref:`allow_missing_or_failed <envoy_v3_api_field_extensions.filters.http.j
+    # wt_authn.v3.JwtRequirement.allow_missing_or_failed>` are implemented
+    # differently than other *JwtRequirements*. Hence the usage of this field is
+    # different as follows if *allow_missing* or *allow_missing_or_failed* is
+    # used: * If a JWT has *iss* field, it needs to be specified by this field in
+    # one of *JwtProviders*. * If a JWT doesn't have *iss* field, one of
+    # *JwtProviders* should fill this field empty. * Multiple *JwtProviders*
+    # should not have same value in this field. Example:
+    # https://securetoken.google.com Example:
+    # 1234567-compute@developer.gserviceaccount.com
     issuer: str = betterproto.string_field(1)
     # The list of JWT `audiences
     # <https://tools.ietf.org/html/rfc7519#section-4.1.3>`_ are allowed to
@@ -45,7 +58,8 @@ class JwtProvider(betterproto.Message):
     # the remote HTTP URI and how the fetched JWKS should be cached. Example: ..
     # code-block:: yaml    remote_jwks:      http_uri:        uri:
     # https://www.googleapis.com/oauth2/v1/certs        cluster:
-    # jwt.www.googleapis.com|443      cache_duration:        seconds: 300
+    # jwt.www.googleapis.com|443        timeout: 1s      cache_duration:
+    # seconds: 300
     remote_jwks: "RemoteJwks" = betterproto.message_field(
         3, group="jwks_source_specifier"
     )
@@ -82,6 +96,14 @@ class JwtProvider(betterproto.Message):
     # base64url_encoded(jwt_payload_in_JSON) If it is not specified, the payload
     # will not be forwarded.
     forward_payload_header: str = betterproto.string_field(8)
+    # When :ref:`forward_payload_header <envoy_v3_api_field_extensions.filters.ht
+    # tp.jwt_authn.v3.JwtProvider.forward_payload_header>` is specified, the
+    # base64 encoded payload will be added to the headers. Normally JWT based64
+    # encode doesn't add padding. If this field is true, the header will be
+    # padded. This field is only relevant if :ref:`forward_payload_header <envoy_
+    # v3_api_field_extensions.filters.http.jwt_authn.v3.JwtProvider.forward_paylo
+    # ad_header>` is specified.
+    pad_forward_payload_header: bool = betterproto.bool_field(11)
     # If non empty, successfully verified JWT payloads will be written to
     # StreamInfo DynamicMetadata in the format as: *namespace* is the jwt_authn
     # filter name as **envoy.filters.http.jwt_authn** The value is the
@@ -92,6 +114,9 @@ class JwtProvider(betterproto.Message):
     # https://example.com       sub: test@example.com       aud:
     # https://example.com       exp: 1501281058
     payload_in_metadata: str = betterproto.string_field(9)
+    # Specify the clock skew in seconds when verifying JWT time constraint, such
+    # as `exp`, and `nbf`. If not specified, default is 60 seconds.
+    clock_skew_seconds: int = betterproto.uint32_field(10)
 
 
 @dataclass(eq=False, repr=False)
@@ -102,11 +127,38 @@ class RemoteJwks(betterproto.Message):
 
     # The HTTP URI to fetch the JWKS. For example: .. code-block:: yaml
     # http_uri:      uri: https://www.googleapis.com/oauth2/v1/certs
-    # cluster: jwt.www.googleapis.com|443
+    # cluster: jwt.www.googleapis.com|443      timeout: 1s
     http_uri: "_____config_core_v4_alpha__.HttpUri" = betterproto.message_field(1)
     # Duration after which the cached JWKS should be expired. If not specified,
     # default cache duration is 5 minutes.
     cache_duration: timedelta = betterproto.message_field(2)
+    # Fetch Jwks asynchronously in the main thread before the listener is
+    # activated. Fetched Jwks can be used by all worker threads. If this feature
+    # is not enabled: * The Jwks is fetched on-demand when the requests come.
+    # During the fetching, first   few requests are paused until the Jwks is
+    # fetched. * Each worker thread fetches its own Jwks since Jwks cache is per
+    # worker thread. If this feature is enabled: * Fetched Jwks is done in the
+    # main thread before the listener is activated. Its fetched   Jwks can be
+    # used by all worker threads. Each worker thread doesn't need to fetch its
+    # own. * Jwks is ready when the requests come, not need to wait for the Jwks
+    # fetching.
+    async_fetch: "JwksAsyncFetch" = betterproto.message_field(3)
+
+
+@dataclass(eq=False, repr=False)
+class JwksAsyncFetch(betterproto.Message):
+    """
+    Fetch Jwks asynchronously in the main thread when the filter config is
+    parsed. The listener is activated only after the Jwks is fetched. When the
+    Jwks is expired in the cache, it is fetched again in the main thread. The
+    fetched Jwks from the main thread can be used by all worker threads.
+    """
+
+    # If false, the listener is activated after the initial fetch is completed.
+    # The initial fetch result can be either successful or failed. If true, it is
+    # activated without waiting for the initial fetch to complete. Default is
+    # false.
+    fast_listener: bool = betterproto.bool_field(1)
 
 
 @dataclass(eq=False, repr=False)
@@ -226,8 +278,14 @@ class RequirementRule(betterproto.Message):
     # "requires" field will apply. For example: following match will match all
     # requests. .. code-block:: yaml    match:      prefix: /
     match: "_____config_route_v4_alpha__.RouteMatch" = betterproto.message_field(1)
-    # Specify a Jwt Requirement. Please detail comment in message JwtRequirement.
-    requires: "JwtRequirement" = betterproto.message_field(2)
+    # Specify a Jwt requirement. Please see detail comment in message
+    # JwtRequirement.
+    requires: "JwtRequirement" = betterproto.message_field(2, group="requirement_type")
+    # Use requirement_name to specify a Jwt requirement. This requirement_name
+    # MUST be specified at the :ref:`requirement_map <envoy_v3_api_field_extensio
+    # ns.filters.http.jwt_authn.v3.JwtAuthentication.requirement_map>` in
+    # `JwtAuthentication`.
+    requirement_name: str = betterproto.string_field(3, group="requirement_type")
 
 
 @dataclass(eq=False, repr=False)
@@ -259,23 +317,24 @@ class JwtAuthentication(betterproto.Message):
     .. code-block:: yaml   providers:      provider1:        issuer: issuer1
     audiences:        - audience1        - audience2        remote_jwks:
     http_uri:            uri: https://example.com/.well-known/jwks.json
-    cluster: example_jwks_cluster      provider2:        issuer: issuer2
-    local_jwks:          inline_string: jwks_string   rules:      # Not jwt
-    verification is required for /health path      - match:          prefix:
-    /health      # Jwt verification for provider1 is required for path prefixed
-    with "prefix"      - match:          prefix: /prefix        requires:
-    provider_name: provider1      # Jwt verification for either provider1 or
-    provider2 is required for all other requests.      - match:
-    prefix: /        requires:          requires_any:            requirements:
-    - provider_name: provider1              - provider_name: provider2
+    cluster: example_jwks_cluster            timeout: 1s      provider2:
+    issuer: issuer2        local_jwks:          inline_string: jwks_string
+    rules:      # Not jwt verification is required for /health path      -
+    match:          prefix: /health      # Jwt verification for provider1 is
+    required for path prefixed with "prefix"      - match:          prefix:
+    /prefix        requires:          provider_name: provider1      # Jwt
+    verification for either provider1 or provider2 is required for all other
+    requests.      - match:          prefix: /        requires:
+    requires_any:            requirements:              - provider_name:
+    provider1              - provider_name: provider2 [#next-free-field: 6]
     """
 
     # Map of provider names to JwtProviders. .. code-block:: yaml   providers:
     # provider1:        issuer: issuer1        audiences:        - audience1
     # - audience2        remote_jwks:          http_uri:            uri:
     # https://example.com/.well-known/jwks.json            cluster:
-    # example_jwks_cluster      provider2:        issuer: provider2
-    # local_jwks:          inline_string: jwks_string
+    # example_jwks_cluster            timeout: 1s      provider2:        issuer:
+    # provider2        local_jwks:          inline_string: jwks_string
     providers: Dict[str, "JwtProvider"] = betterproto.map_field(
         1, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
     )
@@ -299,6 +358,27 @@ class JwtAuthentication(betterproto.Message):
     # <http://www.w3.org/TR/cors/#cross-origin-request-with-preflight>`_
     # regardless of JWT requirements specified in the rules.
     bypass_cors_preflight: bool = betterproto.bool_field(4)
+    # A map of unique requirement_names to JwtRequirements.
+    # :ref:`requirement_name <envoy_v3_api_field_extensions.filters.http.jwt_auth
+    # n.v3.PerRouteConfig.requirement_name>` in `PerRouteConfig` uses this map to
+    # specify a JwtRequirement.
+    requirement_map: Dict[str, "JwtRequirement"] = betterproto.map_field(
+        5, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
+    )
+
+
+@dataclass(eq=False, repr=False)
+class PerRouteConfig(betterproto.Message):
+    """Specify per-route config."""
+
+    # Disable Jwt Authentication for this route.
+    disabled: bool = betterproto.bool_field(1, group="requirement_specifier")
+    # Use requirement_name to specify a JwtRequirement. This requirement_name
+    # MUST be specified at the :ref:`requirement_map <envoy_v3_api_field_extensio
+    # ns.filters.http.jwt_authn.v3.JwtAuthentication.requirement_map>` in
+    # `JwtAuthentication`. If no, the requests using this route will be rejected
+    # with 403.
+    requirement_name: str = betterproto.string_field(2, group="requirement_specifier")
 
 
 from ......config.core import v4alpha as _____config_core_v4_alpha__

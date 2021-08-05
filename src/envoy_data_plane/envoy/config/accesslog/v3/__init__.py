@@ -36,10 +36,10 @@ class GrpcStatusFilterStatus(betterproto.Enum):
 
 @dataclass(eq=False, repr=False)
 class AccessLog(betterproto.Message):
-    # The name of the access log implementation to instantiate. The name must
-    # match a statically registered access log. Current built-in loggers include:
-    # #. "envoy.access_loggers.file" #. "envoy.access_loggers.http_grpc" #.
-    # "envoy.access_loggers.tcp_grpc"
+    # The name of the access log extension to instantiate. The name must match
+    # one of the compiled in loggers. See the :ref:`extensions listed in
+    # typed_config below <extension_category_envoy.access_loggers>` for the
+    # default list of available loggers.
     name: str = betterproto.string_field(1)
     # Filter which is used to determine if the access log needs to be written.
     filter: "AccessLogFilter" = betterproto.message_field(2)
@@ -164,8 +164,8 @@ class RuntimeFilter(betterproto.Message):
     # *use_independent_randomness* is set to true, the filter will randomly
     # sample based on the runtime key value alone. *use_independent_randomness*
     # can be used for logging kill switches within complex nested :ref:`AndFilter
-    # <envoy_api_msg_config.accesslog.v3.AndFilter>` and :ref:`OrFilter
-    # <envoy_api_msg_config.accesslog.v3.OrFilter>` blocks that are easier to
+    # <envoy_v3_api_msg_config.accesslog.v3.AndFilter>` and :ref:`OrFilter
+    # <envoy_v3_api_msg_config.accesslog.v3.OrFilter>` blocks that are easier to
     # reason about from a probability perspective (i.e., setting to true will
     # cause the filter to behave like an independent random variable when
     # composed within logical operator filters).

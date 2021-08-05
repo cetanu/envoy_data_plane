@@ -100,8 +100,7 @@ class HttpConnectionManager(betterproto.Message):
     )
     # The maximum request headers size for incoming connections. If unconfigured,
     # the default max request headers allowed is 60 KiB. Requests that exceed
-    # this limit will receive a 431 response. The max configurable limit is 96
-    # KiB, based on current implementation constraints.
+    # this limit will receive a 431 response.
     max_request_headers_kb: Optional[int] = betterproto.message_field(
         29, wraps=betterproto.TYPE_UINT32
     )
@@ -559,7 +558,8 @@ class ScopedRoutesScopeKeyBuilderFragmentBuilderHeaderValueExtractor(
     constitutes an 'element' of the header field.
     """
 
-    # The name of the header field to extract the value from.
+    # The name of the header field to extract the value from. .. note::   If the
+    # header appears multiple times only the first value is used.
     name: str = betterproto.string_field(1)
     # The element separator (e.g., ';' separates 'a;b;c;d'). Default: empty
     # string. This causes the entirety of the header field to be extracted. If
