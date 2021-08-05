@@ -19,7 +19,7 @@ os.chdir(build_directory)
 
 utf8 = "utf-8"
 
-ENVOY_VERSION = "1.16.2"
+ENVOY_VERSION = "1.17.2"
 
 proto_include = protoc.pkg_resources.resource_filename("grpc_tools", "_proto")
 envoy = Path("./envoy")
@@ -33,6 +33,12 @@ packages = {
         name="envoy",
         namespace="envoy",
         directory=f"envoy-{ENVOY_VERSION}/api",
+    ),
+    Package(
+        url="https://github.com/cncf/xds/archive/refs/heads/main.zip",
+        name="xds",
+        namespace=".",
+        directory="xds-main",
     ),
     Package(
         url="https://github.com/googleapis/googleapis/archive/master.zip",
