@@ -21,6 +21,27 @@ This package is published to PyPI:
 python -m pip install envoy_data_plane
 ```
 
+## Installing specific XDS revisions
+
+There are branches available with compiled python protobuf files.  
+To install them, you can use the following syntax:
+
+```shell script
+pip install git+https://github.com/cetanu/envoy_data_plane@<BRANCH NAME>
+```
+
+Examples:
+
+```
+pip install git+https://github.com/cetanu/envoy_data_plane@envoy_v1.13.7
+pip install git+https://github.com/cetanu/envoy_data_plane@envoy_v1.16.2
+pip install git+https://github.com/cetanu/envoy_data_plane@envoy_v1.17.2
+pip install git+https://github.com/cetanu/envoy_data_plane@envoy_v1.18.2
+pip install git+https://github.com/cetanu/envoy_data_plane@envoy_v1.19.0
+```
+
+Not all versions may be available. Raise an issue if you need another one added.
+
 ## Example
 
 ```python
