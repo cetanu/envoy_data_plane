@@ -304,11 +304,23 @@ class WeightedCluster(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class WeightedClusterClusterWeight(betterproto.Message):
-    """[#next-free-field: 12]"""
+    """[#next-free-field: 13]"""
 
-    # Name of the upstream cluster. The cluster must exist in the :ref:`cluster
-    # manager configuration <config_cluster_manager>`.
+    # Only one of *name* and *cluster_header* may be specified. [#next-major-
+    # version: Need to add back the validation rule: (validate.rules).string =
+    # {min_len: 1}] Name of the upstream cluster. The cluster must exist in the
+    # :ref:`cluster manager configuration <config_cluster_manager>`.
     name: str = betterproto.string_field(1)
+    # Only one of *name* and *cluster_header* may be specified. [#next-major-
+    # version: Need to add back the validation rule: (validate.rules).string =
+    # {min_len: 1 }] Envoy will determine the cluster to route to by reading the
+    # value of the HTTP header named by cluster_header from the request headers.
+    # If the header is not found or the referenced cluster does not exist, Envoy
+    # will return a 404 response. .. attention::   Internally, Envoy always uses
+    # the HTTP/2 *:authority* header to represent the HTTP/1   *Host* header.
+    # Thus, if attempting to match on *Host*, match on *:authority* instead. ..
+    # note::   If the header appears multiple times only the first value is used.
+    cluster_header: str = betterproto.string_field(12)
     # An integer between 0 and :ref:`total_weight
     # <envoy_v3_api_field_config.route.v3.WeightedCluster.total_weight>`. When a
     # request matches the route, the choice of an upstream cluster is determined
@@ -377,7 +389,7 @@ class WeightedClusterClusterWeight(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class RouteMatch(betterproto.Message):
-    """[#next-free-field: 13]"""
+    """[#next-free-field: 14]"""
 
     # If specified, the route is a prefix rule meaning that the prefix must match
     # the beginning of the *:path* header.
@@ -447,7 +459,13 @@ class RouteMatch(betterproto.Message):
     # The router will check the query string from the *path* header against all
     # the specified query parameters. If the number of specified query parameters
     # is nonzero, they all must match the *path* header's query string for a
-    # match to occur.
+    # match to occur. .. note::    If query parameters are used to pass request
+    # message fields when    `grpc_json_transcoder <https://www.envoyproxy.io/doc
+    # s/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter>
+    # `_    is used, the transcoded message fields maybe different. The query
+    # parameters are    url encoded, but the message fields are not. For example,
+    # if a query    parameter is "foo%20bar", the message field will be "foo
+    # bar".
     query_parameters: List["QueryParameterMatcher"] = betterproto.message_field(7)
     # If specified, only gRPC requests will be matched. The router will check
     # that the content-type header has a application/grpc or one of the various
@@ -456,6 +474,14 @@ class RouteMatch(betterproto.Message):
     # If specified, the client tls context will be matched against the defined
     # match options. [#next-major-version: unify with RBAC]
     tls_context: "RouteMatchTlsContextMatchOptions" = betterproto.message_field(11)
+    # Specifies a set of dynamic metadata matchers on which the route should
+    # match. The router will check the dynamic metadata against all the specified
+    # dynamic metadata matchers. If the number of specified dynamic metadata
+    # matchers is nonzero, they all must match the dynamic metadata for a match
+    # to occur.
+    dynamic_metadata: List[
+        "___type_matcher_v3__.MetadataMatcher"
+    ] = betterproto.message_field(13)
 
 
 @dataclass(eq=False, repr=False)
@@ -1030,7 +1056,7 @@ class RouteActionMaxStreamDuration(betterproto.Message):
 class RetryPolicy(betterproto.Message):
     """
     HTTP retry :ref:`architecture overview <arch_overview_http_routing_retry>`.
-    [#next-free-field: 12]
+    [#next-free-field: 14]
     """
 
     # Specifies the conditions under which retry takes place. These are the same
@@ -1043,16 +1069,41 @@ class RetryPolicy(betterproto.Message):
     num_retries: Optional[int] = betterproto.message_field(
         2, wraps=betterproto.TYPE_UINT32
     )
-    # Specifies a non-zero upstream timeout per retry attempt. This parameter is
-    # optional. The same conditions documented for
-    # :ref:`config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`
-    # apply. .. note::   If left unspecified, Envoy will use the global
-    # :ref:`route timeout
+    # Specifies a non-zero upstream timeout per retry attempt (including the
+    # initial attempt). This parameter is optional. The same conditions
+    # documented for :ref:`config_http_filters_router_x-envoy-upstream-rq-per-
+    # try-timeout-ms` apply. .. note::   If left unspecified, Envoy will use the
+    # global   :ref:`route timeout
     # <envoy_v3_api_field_config.route.v3.RouteAction.timeout>` for the request.
     # Consequently, when using a :ref:`5xx <config_http_filters_router_x-envoy-
     # retry-on>` based   retry policy, a request that times out will not be
     # retried as the total timeout budget   would have been exhausted.
     per_try_timeout: timedelta = betterproto.message_field(3)
+    # Specifies an upstream idle timeout per retry attempt (including the initial
+    # attempt). This parameter is optional and if absent there is no per try idle
+    # timeout. The semantics of the per try idle timeout are similar to the
+    # :ref:`route idle timeout
+    # <envoy_v3_api_field_config.route.v3.RouteAction.timeout>` and :ref:`stream
+    # idle timeout <envoy_v3_api_field_extensions.filters.network.http_connection
+    # _manager.v3.HttpConnectionManager.stream_idle_timeout>` both enforced by
+    # the HTTP connection manager. The difference is that this idle timeout is
+    # enforced by the router for each individual attempt and thus after all
+    # previous filters have run, as opposed to *before* all previous filters run
+    # for the other idle timeouts. This timeout is useful in cases in which total
+    # request timeout is bounded by a number of retries and a
+    # :ref:`per_try_timeout
+    # <envoy_v3_api_field_config.route.v3.RetryPolicy.per_try_timeout>`, but
+    # there is a desire to ensure each try is making incremental progress. Note
+    # also that similar to :ref:`per_try_timeout
+    # <envoy_v3_api_field_config.route.v3.RetryPolicy.per_try_timeout>`, this
+    # idle timeout does not start until after both the entire request has been
+    # received by the router *and* a connection pool connection has been
+    # obtained. Unlike :ref:`per_try_timeout
+    # <envoy_v3_api_field_config.route.v3.RetryPolicy.per_try_timeout>`, the idle
+    # timer continues once the response starts streaming back to the downstream
+    # client. This ensures that response data continues to make progress without
+    # using one of the HTTP connection manager idle timeouts.
+    per_try_idle_timeout: timedelta = betterproto.message_field(13)
     # Specifies an implementation of a RetryPriority which is used to determine
     # the distribution of load across priorities used for retries. Refer to
     # :ref:`retry plugin configuration <arch_overview_http_retry_plugins>` for
@@ -1065,6 +1116,13 @@ class RetryPolicy(betterproto.Message):
     retry_host_predicate: List[
         "RetryPolicyRetryHostPredicate"
     ] = betterproto.message_field(5)
+    # Retry options predicates that will be applied prior to retrying a request.
+    # These predicates allow customizing request behavior between retries.
+    # [#comment: add [#extension-category: envoy.retry_options_predicates] when
+    # there are built-in extensions]
+    retry_options_predicates: List[
+        "__core_v3__.TypedExtensionConfig"
+    ] = betterproto.message_field(12)
     # The maximum number of times host selection will be reattempted before
     # giving up, at which point the host that was last selected will be routed
     # to. If unspecified, this will default to retrying once.
@@ -1635,17 +1693,20 @@ class HeaderMatcher(betterproto.Message):
     request that has the :ref:`name
     <envoy_v3_api_field_config.route.v3.HeaderMatcher.name>` header will match,
     regardless of the header's   value.  [#next-major-version: HeaderMatcher
-    should be refactored to use StringMatcher.] [#next-free-field: 13]
+    should be refactored to use StringMatcher.] [#next-free-field: 14]
     """
 
     # Specifies the name of the header in the request.
     name: str = betterproto.string_field(1)
     # If specified, header match will be performed based on the value of the
-    # header.
+    # header. This field is deprecated. Please use :ref:`string_match
+    # <envoy_v3_api_field_config.route.v3.HeaderMatcher.string_match>`.
     exact_match: str = betterproto.string_field(4, group="header_match_specifier")
     # If specified, this regex string is a regular expression rule which implies
     # the entire request header value must match the regex. The rule will not
     # match if only a subsequence of the request header value matches the regex.
+    # This field is deprecated. Please use :ref:`string_match
+    # <envoy_v3_api_field_config.route.v3.HeaderMatcher.string_match>`.
     safe_regex_match: "___type_matcher_v3__.RegexMatcher" = betterproto.message_field(
         11, group="header_match_specifier"
     )
@@ -1667,24 +1728,54 @@ class HeaderMatcher(betterproto.Message):
     present_match: bool = betterproto.bool_field(7, group="header_match_specifier")
     # If specified, header match will be performed based on the prefix of the
     # header value. Note: empty prefix is not allowed, please use present_match
-    # instead. Examples: * The prefix *abcd* matches the value *abcdxyz*, but not
-    # for *abcxyz*.
+    # instead. This field is deprecated. Please use :ref:`string_match
+    # <envoy_v3_api_field_config.route.v3.HeaderMatcher.string_match>`. Examples:
+    # * The prefix *abcd* matches the value *abcdxyz*, but not for *abcxyz*.
     prefix_match: str = betterproto.string_field(9, group="header_match_specifier")
     # If specified, header match will be performed based on the suffix of the
     # header value. Note: empty suffix is not allowed, please use present_match
-    # instead. Examples: * The suffix *abcd* matches the value *xyzabcd*, but not
-    # for *xyzbcd*.
+    # instead. This field is deprecated. Please use :ref:`string_match
+    # <envoy_v3_api_field_config.route.v3.HeaderMatcher.string_match>`. Examples:
+    # * The suffix *abcd* matches the value *xyzabcd*, but not for *xyzbcd*.
     suffix_match: str = betterproto.string_field(10, group="header_match_specifier")
     # If specified, header match will be performed based on whether the header
     # value contains the given value or not. Note: empty contains match is not
-    # allowed, please use present_match instead. Examples: * The value *abcd*
-    # matches the value *xyzabcdpqr*, but not for *xyzbcdpqr*.
+    # allowed, please use present_match instead. This field is deprecated. Please
+    # use :ref:`string_match
+    # <envoy_v3_api_field_config.route.v3.HeaderMatcher.string_match>`. Examples:
+    # * The value *abcd* matches the value *xyzabcdpqr*, but not for *xyzbcdpqr*.
     contains_match: str = betterproto.string_field(12, group="header_match_specifier")
+    # If specified, header match will be performed based on the string match of
+    # the header value.
+    string_match: "___type_matcher_v3__.StringMatcher" = betterproto.message_field(
+        13, group="header_match_specifier"
+    )
     # If specified, the match result will be inverted before checking. Defaults
     # to false. Examples: * The regex ``\d{3}`` does not match the value *1234*,
     # so it will match when inverted. * The range [-10,0) will match the value
     # -1, so it will not match when inverted.
     invert_match: bool = betterproto.bool_field(8)
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.exact_match:
+            warnings.warn("HeaderMatcher.exact_match is deprecated", DeprecationWarning)
+        if self.safe_regex_match:
+            warnings.warn(
+                "HeaderMatcher.safe_regex_match is deprecated", DeprecationWarning
+            )
+        if self.prefix_match:
+            warnings.warn(
+                "HeaderMatcher.prefix_match is deprecated", DeprecationWarning
+            )
+        if self.suffix_match:
+            warnings.warn(
+                "HeaderMatcher.suffix_match is deprecated", DeprecationWarning
+            )
+        if self.contains_match:
+            warnings.warn(
+                "HeaderMatcher.contains_match is deprecated", DeprecationWarning
+            )
 
 
 @dataclass(eq=False, repr=False)

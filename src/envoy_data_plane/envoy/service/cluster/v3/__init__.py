@@ -61,7 +61,7 @@ class ClusterDiscoveryServiceStub(betterproto.ServiceStub):
         resource_names: Optional[List[str]] = None,
         type_url: str = "",
         response_nonce: str = "",
-        error_detail: "____google_rpc__.Status" = None,
+        error_detail: "____google_rpc__.Status" = None
     ) -> "__discovery_v3__.DiscoveryResponse":
         resource_names = resource_names or []
 

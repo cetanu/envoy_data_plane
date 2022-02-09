@@ -156,8 +156,9 @@ class CheckRequest(betterproto.Message):
 class DeniedHttpResponse(betterproto.Message):
     """HTTP attributes for a denied response."""
 
-    # This field allows the authorization service to send a HTTP response status
-    # code to the downstream client other than 403 (Forbidden).
+    # This field allows the authorization service to send an HTTP response status
+    # code to the downstream client. If not set, Envoy sends ``403 Forbidden``
+    # HTTP status code by default.
     status: "___type_v3__.HttpStatus" = betterproto.message_field(1)
     # This field allows the authorization service to send HTTP response headers
     # to the downstream client. Note that the :ref:`append field in
@@ -232,7 +233,10 @@ class CheckResponse(betterproto.Message):
     """Intended for gRPC and Network Authorization servers `only`."""
 
     # Status `OK` allows the request. Any other status indicates the request
-    # should be denied.
+    # should be denied, and for HTTP filter, if not overridden by :ref:`denied
+    # HTTP response status
+    # <envoy_v3_api_field_service.auth.v3.DeniedHttpResponse.status>` Envoy sends
+    # ``403 Forbidden`` HTTP status code by default.
     status: "____google_rpc__.Status" = betterproto.message_field(1)
     # Supplies http attributes for a denied response.
     denied_response: "DeniedHttpResponse" = betterproto.message_field(

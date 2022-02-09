@@ -12,8 +12,10 @@ from betterproto.grpc.grpclib_server import ServiceBase
 class Alts(betterproto.Message):
     """
     Configuration for ALTS transport socket. This provides Google's ALTS
-    protocol to Envoy. https://cloud.google.com/security/encryption-in-
-    transit/application-layer-transport-security/
+    protocol to Envoy. Store the peer identity in dynamic metadata, namespace
+    is "envoy.transport_socket.peer_information", key is "peer_identity".
+    https://cloud.google.com/security/encryption-in-transit/application-layer-
+    transport-security/
     """
 
     # The location of a handshaker service, this is usually 169.254.169.254:8080

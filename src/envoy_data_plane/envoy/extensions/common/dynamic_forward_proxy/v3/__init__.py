@@ -26,7 +26,7 @@ class DnsCacheConfig(betterproto.Message):
     """
     Configuration for the dynamic forward proxy DNS cache. See the
     :ref:`architecture overview <arch_overview_http_dynamic_forward_proxy>` for
-    more information. [#next-free-field: 12]
+    more information. [#next-free-field: 14]
     """
 
     # The name of the cache. Multiple named caches allow independent dynamic
@@ -87,9 +87,29 @@ class DnsCacheConfig(betterproto.Message):
     # aggregates all of the DNS resolver configuration in a single message.
     use_tcp_for_dns_lookups: bool = betterproto.bool_field(8)
     # DNS resolution configuration which includes the underlying dns resolver
-    # addresses and options.
+    # addresses and options. *dns_resolution_config* will be deprecated once
+    # :ref:'typed_dns_resolver_config <envoy_v3_api_field_extensions.common.dynam
+    # ic_forward_proxy.v3.DnsCacheConfig.typed_dns_resolver_config>' is fully
+    # supported.
     dns_resolution_config: "____config_core_v3__.DnsResolutionConfig" = (
         betterproto.message_field(9)
+    )
+    # DNS resolver type configuration extension. This extension can be used to
+    # configure c-ares, apple, or any other DNS resolver types and the related
+    # parameters. For example, an object of :ref:`DnsResolutionConfig
+    # <envoy_v3_api_msg_config.core.v3.DnsResolutionConfig>` can be packed into
+    # this *typed_dns_resolver_config*. This configuration will replace the
+    # :ref:'dns_resolution_config <envoy_v3_api_field_extensions.common.dynamic_f
+    # orward_proxy.v3.DnsCacheConfig.dns_resolution_config>' configuration
+    # eventually. TODO(yanjunxiang): Investigate the deprecation plan for
+    # *dns_resolution_config*. During the transition period when both
+    # *dns_resolution_config* and *typed_dns_resolver_config* exists, this
+    # configuration is optional. When *typed_dns_resolver_config* is in place,
+    # Envoy will use it and ignore *dns_resolution_config*. When
+    # *typed_dns_resolver_config* is missing, the default behavior is in place.
+    # [#not-implemented-hide:]
+    typed_dns_resolver_config: "____config_core_v3__.TypedExtensionConfig" = (
+        betterproto.message_field(12)
     )
     # Hostnames that should be preresolved into the cache upon creation. This
     # might provide a performance improvement, in the form of cache hits, for
@@ -104,6 +124,11 @@ class DnsCacheConfig(betterproto.Message):
     # that queries succeed or fail within the specified time frame and are then
     # retried using the standard refresh rates. Defaults to 5s if not set.
     dns_query_timeout: timedelta = betterproto.message_field(11)
+    # [#not-implemented-hide:] Configuration to flush the DNS cache to long term
+    # storage.
+    key_value_config: "____config_common_key_value_v3__.KeyValueStoreConfig" = (
+        betterproto.message_field(13)
+    )
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -115,4 +140,5 @@ class DnsCacheConfig(betterproto.Message):
 
 
 from .....config.cluster import v3 as ____config_cluster_v3__
+from .....config.common.key_value import v3 as ____config_common_key_value_v3__
 from .....config.core import v3 as ____config_core_v3__

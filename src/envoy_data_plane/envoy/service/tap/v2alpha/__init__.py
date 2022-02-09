@@ -2,7 +2,7 @@
 # sources: envoy/service/tap/v2alpha/common.proto, envoy/service/tap/v2alpha/tap.proto
 # plugin: python-betterproto
 from dataclasses import dataclass
-from typing import AsyncIterable, Dict, Iterable, List, Optional, Union
+from typing import AsyncIterable, AsyncIterator, Dict, Iterable, List, Optional, Union
 
 import betterproto
 from betterproto.grpc.grpclib_server import ServiceBase

@@ -84,7 +84,9 @@ class HttpProtocolOptionsExplicitHttpConfig(betterproto.Message):
 class HttpProtocolOptionsUseDownstreamHttpConfig(betterproto.Message):
     """
     If this is used, the cluster can use either of the configured protocols,
-    and will use whichever protocol was used by the downstream connection.
+    and will use whichever protocol was used by the downstream connection. If
+    HTTP/3 is configured for downstream and not configured for upstream, HTTP/3
+    requests will fail over to HTTP/2.
     """
 
     http_protocol_options: "____config_core_v3__.Http1ProtocolOptions" = (
@@ -131,11 +133,11 @@ class HttpProtocolOptionsAutoHttpConfig(betterproto.Message):
     http3_protocol_options: "____config_core_v3__.Http3ProtocolOptions" = (
         betterproto.message_field(3)
     )
-    # [#not-implemented-hide:] The presence of alternate protocols cache options
-    # causes the use of the alternate protocols cache, which is responsible for
-    # parsing and caching HTTP Alt-Svc headers. This enables the use of HTTP/3
-    # for origins that advertise supporting it. TODO(RyanTheOptimist): Make this
-    # field required when HTTP/3 is enabled.
+    # The presence of alternate protocols cache options causes the use of the
+    # alternate protocols cache, which is responsible for parsing and caching
+    # HTTP Alt-Svc headers. This enables the use of HTTP/3 for origins that
+    # advertise supporting it. .. note::   This is required when HTTP/3 is
+    # enabled.
     alternate_protocols_cache_options: "____config_core_v3__.AlternateProtocolsCacheOptions" = betterproto.message_field(
         4
     )

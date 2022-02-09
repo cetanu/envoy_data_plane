@@ -17,7 +17,7 @@ class GrpcJsonTranscoderUrlUnescapeSpec(betterproto.Enum):
 @dataclass(eq=False, repr=False)
 class GrpcJsonTranscoder(betterproto.Message):
     """
-    [#next-free-field: 12] GrpcJsonTranscoder filter configuration. The filter
+    [#next-free-field: 13] GrpcJsonTranscoder filter configuration. The filter
     itself can be used per route / per virtual host or on the general level.
     The most specific one is being used for a given route. If the list of
     services is empty - filter is considered to be disabled. Note that if
@@ -99,7 +99,7 @@ class GrpcJsonTranscoder(betterproto.Message):
     # <config_grpc_json_generate_proto_descriptor_set>`.
     convert_grpc_status: bool = betterproto.bool_field(9)
     # URL unescaping policy. This spec is only applied when extracting variable
-    # with multiple segments. For example, in case of
+    # with multiple segments in the URL path. For example, in case of
     # `/foo/{x=*}/bar/{y=prefix/*}/{z=**}` `x` variable is single segment and `y`
     # and `z` are multiple segments. For a path with
     # `/foo/first/bar/prefix/second/third/fourth`, `x=first`, `y=prefix/second`,
@@ -108,6 +108,10 @@ class GrpcJsonTranscoder(betterproto.Message):
     # ers.http.grpc_json_transcoder.v3.GrpcJsonTranscoder.UrlUnescapeSpec.ALL_CHA
     # RACTERS_EXCEPT_RESERVED>`.
     url_unescape_spec: "GrpcJsonTranscoderUrlUnescapeSpec" = betterproto.enum_field(10)
+    # If true, unescape '+' to space when extracting variables in query
+    # parameters. This is to support `HTML 2.0
+    # <https://tools.ietf.org/html/rfc1866#section-8.2.1>`_
+    query_param_unescape_plus: bool = betterproto.bool_field(12)
     # Configure the behavior when handling requests that cannot be transcoded. By
     # default, the transcoder will silently pass through HTTP requests that are
     # malformed. This includes requests with unknown query parameters, unregister

@@ -77,13 +77,14 @@ class ApiListener(betterproto.Message):
 
     # The type in this field determines the type of API listener. At present, the
     # following types are supported: envoy.extensions.filters.network.http_connec
-    # tion_manager.v3.HttpConnectionManager (HTTP) [#next-major-version: In the
-    # v3 API, replace this Any field with a oneof containing the specific config
-    # message for each type of API listener. We could not do this in v2 because
-    # it would have caused circular dependencies for go protos: lds.proto depends
-    # on this file, and http_connection_manager.proto depends on rds.proto, which
-    # is in the same directory as lds.proto, so lds.proto cannot depend on this
-    # file.]
+    # tion_manager.v3.HttpConnectionManager (HTTP) envoy.extensions.filters.netwo
+    # rk.http_connection_manager.v3.EnvoyMobileHttpConnectionManager (HTTP)
+    # [#next-major-version: In the v3 API, replace this Any field with a oneof
+    # containing the specific config message for each type of API listener. We
+    # could not do this in v2 because it would have caused circular dependencies
+    # for go protos: lds.proto depends on this file, and
+    # http_connection_manager.proto depends on rds.proto, which is in the same
+    # directory as lds.proto, so lds.proto cannot depend on this file.]
     api_listener: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(1)
 
 
@@ -304,7 +305,7 @@ class ListenerFilterChainMatchPredicate(betterproto.Message):
     code-block:: yaml  destination_port_range:   start: 3306   end: 3307 *
     Matches if the destination port is 3306 or 15000. .. code-block:: yaml
     or_match:    rules:      - destination_port_range:          start: 3306
-    end: 3306      - destination_port_range:          start: 15000
+    end: 3307      - destination_port_range:          start: 15000
     end: 15001 [#next-free-field: 6]
     """
 
@@ -396,7 +397,7 @@ class ListenerCollection(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class Listener(betterproto.Message):
-    """[#next-free-field: 29]"""
+    """[#next-free-field: 30]"""
 
     # The unique name by which this listener is known. If no name is provided,
     # Envoy will allocate an internal UUID for the listener. If the listener is
@@ -552,18 +553,28 @@ class Listener(betterproto.Message):
     connection_balance_config: "ListenerConnectionBalanceConfig" = (
         betterproto.message_field(20)
     )
+    # Deprecated. Use `enable_reuse_port` instead.
+    reuse_port: bool = betterproto.bool_field(21)
     # When this flag is set to true, listeners set the *SO_REUSEPORT* socket
     # option and create one socket for each worker thread. This makes inbound
     # connections distribute among worker threads roughly evenly in cases where
     # there are a high number of connections. When this flag is set to false, all
-    # worker threads share one socket. Before Linux v4.19-rc1, new TCP
-    # connections may be rejected during hot restart (see `3rd paragraph in
-    # 'soreuseport' commit message
-    # <https://github.com/torvalds/linux/commit/c617f398edd4db2b8567a28e89>`_).
-    # This issue was fixed by `tcp: Avoid TCP syncookie rejected by SO_REUSEPORT
-    # socket <https://github.com/torvalds/linux/commit/40a1227ea845a37ab197dd1caf
-    # fb60b047fa36b1>`_.
-    reuse_port: bool = betterproto.bool_field(21)
+    # worker threads share one socket. This field defaults to true. ..
+    # attention::   Although this field defaults to true, it has different
+    # behavior on different platforms. See   the following text for more
+    # information. * On Linux, reuse_port is respected for both TCP and UDP
+    # listeners. It also works correctly   with hot restart. * On macOS,
+    # reuse_port for TCP does not do what it does on Linux. Instead of load
+    # balancing,   the last socket wins and receives all connections/packets. For
+    # TCP, reuse_port is force   disabled and the user is warned. For UDP, it is
+    # enabled, but only one worker will receive   packets. For QUIC/H3, SW
+    # routing will send packets to other workers. For "raw" UDP, only   a single
+    # worker will currently receive packets. * On Windows, reuse_port for TCP has
+    # undefined behavior. It is force disabled and the user   is warned similar
+    # to macOS. It is left enabled for UDP with undefined behavior currently.
+    enable_reuse_port: Optional[bool] = betterproto.message_field(
+        29, wraps=betterproto.TYPE_BOOL
+    )
     # Configuration for :ref:`access logs <arch_overview_access_logs>` emitted by
     # this listener.
     access_log: List["__accesslog_v3__.AccessLog"] = betterproto.message_field(22)
@@ -606,6 +617,8 @@ class Listener(betterproto.Message):
         super().__post_init__()
         if self.deprecated_v1:
             warnings.warn("Listener.deprecated_v1 is deprecated", DeprecationWarning)
+        if self.reuse_port:
+            warnings.warn("Listener.reuse_port is deprecated", DeprecationWarning)
 
 
 @dataclass(eq=False, repr=False)

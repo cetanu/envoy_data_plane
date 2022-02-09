@@ -176,7 +176,7 @@ class ListenerFilterChainMatchPredicate(betterproto.Message):
     code-block:: yaml  destination_port_range:   start: 3306   end: 3307 *
     Matches if the destination port is 3306 or 15000. .. code-block:: yaml
     or_match:    rules:      - destination_port_range:          start: 3306
-    end: 3306      - destination_port_range:          start: 15000
+    end: 3307      - destination_port_range:          start: 15000
     end: 15001 [#next-free-field: 6]
     """
 

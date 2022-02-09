@@ -11,17 +11,14 @@ from betterproto.grpc.grpclib_server import ServiceBase
 class FilterConfig(betterproto.Message):
     """
     Configuration for the alternate protocols cache HTTP filter. [#extension:
-    envoy.filters.http.alternate_protocols_cache] TODO(RyanTheOptimist): Move
-    content from source/docs/http3_upstream.md to
-    docs/root/intro/arch_overview/upstream/connection_pooling.rst when unhiding
-    the proto.
+    envoy.filters.http.alternate_protocols_cache]
     """
 
-    # [#not-implemented-hide:] If set, causes the use of the alternate protocols
-    # cache, which is responsible for parsing and caching HTTP Alt-Svc headers.
-    # This enables the use of HTTP/3 for upstream servers that advertise
-    # supporting it. TODO(RyanTheOptimist): Make this field required when HTTP/3
-    # is enabled via auto_http.
+    # If set, causes the use of the alternate protocols cache, which is
+    # responsible for parsing and caching HTTP Alt-Svc headers. This enables the
+    # use of HTTP/3 for upstream servers that advertise supporting it.
+    # TODO(RyanTheOptimist): Make this field required when HTTP/3 is enabled via
+    # auto_http.
     alternate_protocols_cache_options: "_____config_core_v3__.AlternateProtocolsCacheOptions" = betterproto.message_field(
         1
     )

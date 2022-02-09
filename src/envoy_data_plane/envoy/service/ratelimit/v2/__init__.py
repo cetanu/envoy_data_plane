@@ -103,7 +103,7 @@ class RateLimitServiceStub(betterproto.ServiceStub):
         *,
         domain: str = "",
         descriptors: Optional[List["___api_v2_ratelimit__.RateLimitDescriptor"]] = None,
-        hits_addend: int = 0,
+        hits_addend: int = 0
     ) -> "RateLimitResponse":
         descriptors = descriptors or []
 

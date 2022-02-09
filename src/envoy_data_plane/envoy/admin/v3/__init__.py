@@ -828,8 +828,6 @@ class CommandLineOptions(betterproto.Message):
     cpuset_threads: bool = betterproto.bool_field(25)
     # See :option:`--disable-extensions` for details.
     disabled_extensions: List[str] = betterproto.string_field(28)
-    # See :option:`--bootstrap-version` for details.
-    bootstrap_version: int = betterproto.uint32_field(29)
     # See :option:`--enable-fine-grain-logging` for details.
     enable_fine_grain_logging: bool = betterproto.bool_field(34)
     # See :option:`--socket-path` for details.

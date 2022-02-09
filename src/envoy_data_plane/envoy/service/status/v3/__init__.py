@@ -183,7 +183,7 @@ class ClientStatusDiscoveryServiceStub(betterproto.ServiceStub):
         self,
         *,
         node_matchers: Optional[List["___type_matcher_v3__.NodeMatcher"]] = None,
-        node: "___config_core_v3__.Node" = None,
+        node: "___config_core_v3__.Node" = None
     ) -> "ClientStatusResponse":
         node_matchers = node_matchers or []
 

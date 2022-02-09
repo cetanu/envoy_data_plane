@@ -126,7 +126,7 @@ class ExprCall(betterproto.Message):
 class ExprCreateList(betterproto.Message):
     """
     A list creation expression. Lists may either be homogenous, e.g. `[1, 2,
-    3]`, or heterogenous, e.g. `dyn([1, 'hello', 2.0])`
+    3]`, or heterogeneous, e.g. `dyn([1, 'hello', 2.0])`
     """
 
     # The elements part of the list.
@@ -259,13 +259,13 @@ class SourceInfo(betterproto.Message):
     # relative to this location. The location could be a file, UI element, or
     # similar. For example, `acme/app/AnvilPolicy.cel`.
     location: str = betterproto.string_field(2)
-    # Monotonically increasing list of character offsets where newlines appear.
-    # The line number of a given position is the index `i` where for a given `id`
-    # the `line_offsets[i] < id_positions[id] < line_offsets[i+1]`. The column
-    # may be derivd from `id_positions[id] - line_offsets[i]`.
+    # Monotonically increasing list of code point offsets where newlines `\n`
+    # appear. The line number of a given position is the index `i` where for a
+    # given `id` the `line_offsets[i] < id_positions[id] < line_offsets[i+1]`.
+    # The column may be derivd from `id_positions[id] - line_offsets[i]`.
     line_offsets: List[int] = betterproto.int32_field(3)
-    # A map from the parse node id (e.g. `Expr.id`) to the character offset
-    # within source.
+    # A map from the parse node id (e.g. `Expr.id`) to the code point offset
+    # within the source.
     positions: Dict[int, int] = betterproto.map_field(
         4, betterproto.TYPE_INT64, betterproto.TYPE_INT32
     )
@@ -287,7 +287,7 @@ class SourcePosition(betterproto.Message):
 
     # The soucre location name (e.g. file name).
     location: str = betterproto.string_field(1)
-    # The character offset.
+    # The UTF-8 code unit offset.
     offset: int = betterproto.int32_field(2)
     # The 1-based index of the starting line in the source text where the issue
     # occurs, or 0 if unknown.
@@ -324,6 +324,13 @@ class CheckedExpr(betterproto.Message):
     # The source info derived from input that generated the parsed `expr` and any
     # optimizations made during the type-checking pass.
     source_info: "SourceInfo" = betterproto.message_field(5)
+    # The expr version indicates the major / minor version number of the `expr`
+    # representation. The most common reason for a version change will be to
+    # indicate to the CEL runtimes that transformations have been performed on
+    # the expr during static analysis. In some cases, this will save the runtime
+    # the work of applying the same or similar transformations prior to
+    # evaluation.
+    expr_version: str = betterproto.string_field(6)
     # The checked expression. Semantically equivalent to the parsed `expr`, but
     # may have structural differences.
     expr: "Expr" = betterproto.message_field(4)
@@ -458,10 +465,9 @@ class DeclIdentDecl(betterproto.Message):
 class DeclFunctionDecl(betterproto.Message):
     """
     Function declaration specifies one or more overloads which indicate the
-    function's parameter types and return type, and may optionally specify a
-    function definition in terms of CEL expressions. Functions have no
-    observable side-effects (there may be side-effects like logging which are
-    not observable from CEL).
+    function's parameter types and return type. Functions have no observable
+    side-effects (there may be side-effects like logging which are not
+    observable from CEL).
     """
 
     # Required. List of function overloads, must contain at least one overload.

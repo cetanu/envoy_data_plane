@@ -85,18 +85,41 @@ class LbEndpoint(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class LedsClusterLocalityConfig(betterproto.Message):
+    """[#not-implemented-hide:] A configuration for a LEDS collection."""
+
+    # Configuration for the source of LEDS updates for a Locality.
+    leds_config: "__core_v3__.ConfigSource" = betterproto.message_field(1)
+    # The xDS transport protocol glob collection resource name. The service is
+    # only supported in delta xDS (incremental) mode.
+    leds_collection_name: str = betterproto.string_field(2)
+
+
+@dataclass(eq=False, repr=False)
 class LocalityLbEndpoints(betterproto.Message):
     """
     A group of endpoints belonging to a Locality. One can have multiple
     LocalityLbEndpoints for a locality, but this is generally only done if the
     different groups need to have different load balancing weights or different
-    priorities. [#next-free-field: 7]
+    priorities. [#next-free-field: 9]
     """
 
     # Identifies location of where the upstream hosts run.
     locality: "__core_v3__.Locality" = betterproto.message_field(1)
     # The group of endpoints belonging to the locality specified.
+    # [#comment:TODO(adisuissa): Once LEDS is implemented this field needs to be
+    # deprecated and replaced by *load_balancer_endpoints*.]
     lb_endpoints: List["LbEndpoint"] = betterproto.message_field(2)
+    # The group of endpoints belonging to the locality.
+    # [#comment:TODO(adisuissa): Once LEDS is implemented the *lb_endpoints*
+    # field needs to be deprecated.]
+    load_balancer_endpoints: "LocalityLbEndpointsLbEndpointList" = (
+        betterproto.message_field(7, group="lb_config")
+    )
+    # LEDS Configuration for the current locality.
+    leds_cluster_locality_config: "LedsClusterLocalityConfig" = (
+        betterproto.message_field(8, group="lb_config")
+    )
     # Optional: Per priority/region/zone/sub_zone weight; at least 1. The load
     # balancing weight for a locality is divided by the sum of the weights of all
     # localities  at the same priority level to produce the effective percentage
@@ -125,6 +148,13 @@ class LocalityLbEndpoints(betterproto.Message):
     proximity: Optional[int] = betterproto.message_field(
         6, wraps=betterproto.TYPE_UINT32
     )
+
+
+@dataclass(eq=False, repr=False)
+class LocalityLbEndpointsLbEndpointList(betterproto.Message):
+    """[#not-implemented-hide:] A list of endpoints of a specific locality."""
+
+    lb_endpoints: List["LbEndpoint"] = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)

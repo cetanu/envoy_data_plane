@@ -92,7 +92,7 @@ class RouteMatch(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class RouteAction(betterproto.Message):
-    """[#next-free-field: 7]"""
+    """[#next-free-field: 8]"""
 
     # Indicates a single upstream cluster to which the request should be routed
     # to.
@@ -124,6 +124,35 @@ class RouteAction(betterproto.Message):
     # Strip the service prefix from the method name, if there's a prefix. For
     # example, the method call Service:method would end up being just method.
     strip_service_name: bool = betterproto.bool_field(5)
+    # Indicates that the route has request mirroring policies.
+    request_mirror_policies: List[
+        "RouteActionRequestMirrorPolicy"
+    ] = betterproto.message_field(7)
+
+
+@dataclass(eq=False, repr=False)
+class RouteActionRequestMirrorPolicy(betterproto.Message):
+    """
+    The router is capable of shadowing traffic from one cluster to another. The
+    current implementation is "fire and forget," meaning Envoy will not wait
+    for the shadow cluster to respond before returning the response from the
+    primary cluster. All normal statistics are collected for the shadow cluster
+    making this feature useful for testing. .. note::   Shadowing will not be
+    triggered if the primary cluster does not exist.
+    """
+
+    # Specifies the cluster that requests will be mirrored to. The cluster must
+    # exist in the cluster manager configuration when the route configuration is
+    # loaded. If it disappears at runtime, the shadow request will silently be
+    # ignored.
+    cluster: str = betterproto.string_field(1)
+    # If not specified, all requests to the target cluster will be mirrored. For
+    # some fraction N/D, a random number in the range [0,D) is selected. If the
+    # number is <= the value of the numerator N, or if the key is not present,
+    # the default value, the request will be mirrored.
+    runtime_fraction: "_____config_core_v3__.RuntimeFractionalPercent" = (
+        betterproto.message_field(2)
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -182,9 +211,8 @@ class ThriftProxy(betterproto.Message):
     thrift_filters: List["ThriftFilter"] = betterproto.message_field(5)
     # If set to true, Envoy will try to skip decode data after metadata in the
     # Thrift message. This mode will only work if the upstream and downstream
-    # protocols are the same and the transport is the same, the transport type is
-    # framed and the protocol is not Twitter. Otherwise Envoy will fallback to
-    # decode the data.
+    # protocols are the same and the transports are Framed or Header, and the
+    # protocol is not Twitter. Otherwise Envoy will fallback to decode the data.
     payload_passthrough: bool = betterproto.bool_field(6)
     # Optional maximum requests for a single downstream connection. If not
     # specified, there is no limit.

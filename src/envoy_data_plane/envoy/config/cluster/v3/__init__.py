@@ -32,6 +32,7 @@ class ClusterDnsLookupFamily(betterproto.Enum):
     AUTO = 0
     V4_ONLY = 1
     V6_ONLY = 2
+    V4_PREFERRED = 3
 
 
 class ClusterClusterProtocolSelection(betterproto.Enum):
@@ -319,7 +320,7 @@ class ClusterCollection(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class Cluster(betterproto.Message):
-    """Configuration for a single upstream cluster. [#next-free-field: 55]"""
+    """Configuration for a single upstream cluster. [#next-free-field: 57]"""
 
     # Configuration to use different transport sockets for different endpoints.
     # The entry of *envoy.transport_socket_match* in the
@@ -400,9 +401,7 @@ class Cluster(betterproto.Message):
         5, wraps=betterproto.TYPE_UINT32
     )
     # The :ref:`load balancer type <arch_overview_load_balancing_types>` to use
-    # when picking a host in the cluster. [#comment:TODO: Remove enum constraint
-    # :ref:`LOAD_BALANCING_POLICY_CONFIG<envoy_v3_api_enum_value_config.cluster.v
-    # 3.Cluster.LbPolicy.LOAD_BALANCING_POLICY_CONFIG>` when implemented.]
+    # when picking a host in the cluster.
     lb_policy: "ClusterLbPolicy" = betterproto.enum_field(6)
     # Setting this is required for specifying members of :ref:`STATIC<envoy_v3_ap
     # i_enum_value_config.cluster.v3.Cluster.DiscoveryType.STATIC>`, :ref:`STRICT
@@ -423,7 +422,10 @@ class Cluster(betterproto.Message):
     # Optional maximum requests for a single upstream connection. This parameter
     # is respected by both the HTTP/1.1 and HTTP/2 connection pool
     # implementations. If not specified, there is no limit. Setting this
-    # parameter to 1 will effectively disable keep alive.
+    # parameter to 1 will effectively disable keep alive. .. attention::   This
+    # field has been deprecated in favor of the :ref:`max_requests_per_connection
+    # <envoy_v3_api_field_config.core.v3.HttpProtocolOptions.max_requests_per_con
+    # nection>` field.
     max_requests_per_connection: Optional[int] = betterproto.message_field(
         9, wraps=betterproto.TYPE_UINT32
     )
@@ -459,8 +461,7 @@ class Cluster(betterproto.Message):
         betterproto.message_field(29)
     )
     # Additional options when handling HTTP1 requests. This has been deprecated
-    # in favor of http_protocol_options fields in the in the
-    # :ref:`http_protocol_options
+    # in favor of http_protocol_options fields in the :ref:`http_protocol_options
     # <envoy_v3_api_msg_extensions.upstreams.http.v3.HttpProtocolOptions>`
     # message. http_protocol_options can be set via the cluster's :ref:`extension
     # _protocol_options<envoy_v3_api_field_config.cluster.v3.Cluster.typed_extens
@@ -476,7 +477,7 @@ class Cluster(betterproto.Message):
     # knowledge for upstream connections. Even if TLS is used with ALPN,
     # `http2_protocol_options` must be specified. As an aside this allows HTTP/2
     # connections to happen over plain text. This has been deprecated in favor of
-    # http2_protocol_options fields in the in the :ref:`http_protocol_options
+    # http2_protocol_options fields in the :ref:`http_protocol_options
     # <envoy_v3_api_msg_extensions.upstreams.http.v3.HttpProtocolOptions>`
     # message. http2_protocol_options can be set via the cluster's :ref:`extensio
     # n_protocol_options<envoy_v3_api_field_config.cluster.v3.Cluster.typed_exten
@@ -548,9 +549,29 @@ class Cluster(betterproto.Message):
     # aggregates all of the DNS resolver configuration in a single message.
     use_tcp_for_dns_lookups: bool = betterproto.bool_field(45)
     # DNS resolution configuration which includes the underlying dns resolver
-    # addresses and options.
+    # addresses and options. *dns_resolution_config* will be deprecated once
+    # :ref:'typed_dns_resolver_config
+    # <envoy_v3_api_field_config.cluster.v3.Cluster.typed_dns_resolver_config>'
+    # is fully supported.
     dns_resolution_config: "__core_v3__.DnsResolutionConfig" = (
         betterproto.message_field(53)
+    )
+    # DNS resolver type configuration extension. This extension can be used to
+    # configure c-ares, apple, or any other DNS resolver types and the related
+    # parameters. For example, an object of :ref:`DnsResolutionConfig
+    # <envoy_v3_api_msg_config.core.v3.DnsResolutionConfig>` can be packed into
+    # this *typed_dns_resolver_config*. This configuration will replace the
+    # :ref:'dns_resolution_config
+    # <envoy_v3_api_field_config.cluster.v3.Cluster.dns_resolution_config>'
+    # configuration eventually. TODO(yanjunxiang): Investigate the deprecation
+    # plan for *dns_resolution_config*. During the transition period when both
+    # *dns_resolution_config* and *typed_dns_resolver_config* exists, this
+    # configuration is optional. When *typed_dns_resolver_config* is in place,
+    # Envoy will use it and ignore *dns_resolution_config*. When
+    # *typed_dns_resolver_config* is missing, the default behavior is in place.
+    # [#not-implemented-hide:]
+    typed_dns_resolver_config: "__core_v3__.TypedExtensionConfig" = (
+        betterproto.message_field(55)
     )
     # Optional configuration for having cluster readiness block on warm-up.
     # Currently, only applicable for :ref:`STRICT_DNS<envoy_v3_api_enum_value_con
@@ -601,6 +622,10 @@ class Cluster(betterproto.Message):
     least_request_lb_config: "ClusterLeastRequestLbConfig" = betterproto.message_field(
         37, group="lb_config"
     )
+    # Optional configuration for the RoundRobin load balancing policy.
+    round_robin_lb_config: "ClusterRoundRobinLbConfig" = betterproto.message_field(
+        56, group="lb_config"
+    )
     # Common configuration for all load balancer implementations.
     common_lb_config: "ClusterCommonLbConfig" = betterproto.message_field(27)
     # Optional custom transport socket implementation to use for upstream
@@ -648,8 +673,7 @@ class Cluster(betterproto.Message):
     # be applied. The chain will be applied to all outgoing connections that
     # Envoy makes to the upstream servers of this cluster.
     filters: List["Filter"] = betterproto.message_field(40)
-    # [#not-implemented-hide:] New mechanism for LB policy configuration. Used
-    # only if the
+    # New mechanism for LB policy configuration. Used only if the
     # :ref:`lb_policy<envoy_v3_api_field_config.cluster.v3.Cluster.lb_policy>`
     # field has the value :ref:`LOAD_BALANCING_POLICY_CONFIG<envoy_v3_api_enum_va
     # lue_config.cluster.v3.Cluster.LbPolicy.LOAD_BALANCING_POLICY_CONFIG>`.
@@ -702,6 +726,10 @@ class Cluster(betterproto.Message):
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        if self.max_requests_per_connection:
+            warnings.warn(
+                "Cluster.max_requests_per_connection is deprecated", DeprecationWarning
+            )
         if self.upstream_http_protocol_options:
             warnings.warn(
                 "Cluster.upstream_http_protocol_options is deprecated",
@@ -882,6 +910,41 @@ class ClusterLbSubsetConfigLbSubsetSelector(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class ClusterSlowStartConfig(betterproto.Message):
+    """
+    Configuration for :ref:`slow start mode
+    <arch_overview_load_balancing_slow_start>`.
+    """
+
+    # Represents the size of slow start window. If set, the newly created host
+    # remains in slow start mode starting from its creation time for the duration
+    # of slow start window.
+    slow_start_window: timedelta = betterproto.message_field(1)
+    # This parameter controls the speed of traffic increase over the slow start
+    # window. Defaults to 1.0, so that endpoint would get linearly increasing
+    # amount of traffic. When increasing the value for this parameter, the speed
+    # of traffic ramp-up increases non-linearly. The value of aggression
+    # parameter should be greater than 0.0. By tuning the parameter, is possible
+    # to achieve polynomial or exponential shape of ramp-up curve. During slow
+    # start window, effective weight of an endpoint would be scaled with time
+    # factor and aggression: `new_weight = weight * time_factor ^ (1 /
+    # aggression)`, where `time_factor=(time_since_start_seconds /
+    # slow_start_time_seconds)`. As time progresses, more and more traffic would
+    # be sent to endpoint, which is in slow start window. Once host exits slow
+    # start, time_factor and aggression no longer affect its weight.
+    aggression: "__core_v3__.RuntimeDouble" = betterproto.message_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class ClusterRoundRobinLbConfig(betterproto.Message):
+    """Specific configuration for the RoundRobin load balancing policy."""
+
+    # Configuration for slow start mode. If this configuration is not set, slow
+    # start will not be not enabled.
+    slow_start_config: "ClusterSlowStartConfig" = betterproto.message_field(1)
+
+
+@dataclass(eq=False, repr=False)
 class ClusterLeastRequestLbConfig(betterproto.Message):
     """Specific configuration for the LeastRequest load balancing policy."""
 
@@ -906,6 +969,9 @@ class ClusterLeastRequestLbConfig(betterproto.Message):
     # host membership update or a host load balancing weight change. .. note::
     # This setting only takes effect if all host weights are not equal.
     active_request_bias: "__core_v3__.RuntimeDouble" = betterproto.message_field(2)
+    # Configuration for slow start mode. If this configuration is not set, slow
+    # start will not be not enabled.
+    slow_start_config: "ClusterSlowStartConfig" = betterproto.message_field(3)
 
 
 @dataclass(eq=False, repr=False)
@@ -1164,24 +1230,23 @@ class ClusterPreconnectPolicy(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class LoadBalancingPolicy(betterproto.Message):
     """
-    [#not-implemented-hide:] Extensible load balancing policy configuration.
-    Every LB policy defined via this mechanism will be identified via a unique
-    name using reverse DNS notation. If the policy needs configuration
-    parameters, it must define a message for its own configuration, which will
-    be stored in the config field. The name of the policy will tell clients
-    which type of message they should expect to see in the config field. Note
-    that there are cases where it is useful to be able to independently select
-    LB policies for choosing a locality and for choosing an endpoint within
-    that locality. For example, a given deployment may always use the same
-    policy to choose the locality, but for choosing the endpoint within the
-    locality, some clusters may use weighted-round-robin, while others may use
-    some sort of session-based balancing. This can be accomplished via
-    hierarchical LB policies, where the parent LB policy creates a child LB
-    policy for each locality. For each request, the parent chooses the locality
-    and then delegates to the child policy for that locality to choose the
-    endpoint within the locality. To facilitate this, the config message for
-    the top-level LB policy may include a field of type LoadBalancingPolicy
-    that specifies the child policy.
+    Extensible load balancing policy configuration. Every LB policy defined via
+    this mechanism will be identified via a unique name using reverse DNS
+    notation. If the policy needs configuration parameters, it must define a
+    message for its own configuration, which will be stored in the config
+    field. The name of the policy will tell clients which type of message they
+    should expect to see in the config field. Note that there are cases where
+    it is useful to be able to independently select LB policies for choosing a
+    locality and for choosing an endpoint within that locality. For example, a
+    given deployment may always use the same policy to choose the locality, but
+    for choosing the endpoint within the locality, some clusters may use
+    weighted-round-robin, while others may use some sort of session-based
+    balancing. This can be accomplished via hierarchical LB policies, where the
+    parent LB policy creates a child LB policy for each locality. For each
+    request, the parent chooses the locality and then delegates to the child
+    policy for that locality to choose the endpoint within the locality. To
+    facilitate this, the config message for the top-level LB policy may include
+    a field of type LoadBalancingPolicy that specifies the child policy.
     """
 
     # Each client will iterate over the list in order and stop at the first
@@ -1192,9 +1257,9 @@ class LoadBalancingPolicy(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class LoadBalancingPolicyPolicy(betterproto.Message):
-    # Required. The name of the LB policy.
-    name: str = betterproto.string_field(1)
-    typed_config: "betterproto_lib_google_protobuf.Any" = betterproto.message_field(3)
+    typed_extension_config: "__core_v3__.TypedExtensionConfig" = (
+        betterproto.message_field(4)
+    )
 
 
 @dataclass(eq=False, repr=False)

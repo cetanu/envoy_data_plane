@@ -19,7 +19,7 @@ class Composite(betterproto.Message):
     where a match tree is specified that indicates (via
     :ref:`ExecuteFilterAction <envoy_v3_api_msg_extensions.filters.http.composi
     te.v3.ExecuteFilterAction>`) which filter configuration to create and
-    delegate to. [#alpha:]
+    delegate to.
     """
 
     pass

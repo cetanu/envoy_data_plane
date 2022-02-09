@@ -38,10 +38,12 @@ class Rbac(betterproto.Message):
     principal_name:               exact:
     "cluster.local/ns/default/sa/superuser"     "product-viewer":
     permissions:           - and_rules:               rules:                 -
-    header: { name: ":method", exact_match: "GET" }                 - url_path:
-    path: { prefix: "/products" }                 - or_rules:
-    rules:                       - destination_port: 80                       -
-    destination_port: 443       principals:         - any: true
+    header:                     name: ":method"
+    string_match:                       exact: "GET"                 -
+    url_path:                     path: { prefix: "/products" }
+    - or_rules:                     rules:                       -
+    destination_port: 80                       - destination_port: 443
+    principals:         - any: true
     """
 
     # The action to take if a policy matches. Every action either allows or
@@ -96,7 +98,7 @@ class Policy(betterproto.Message):
 class Permission(betterproto.Message):
     """
     Permission defines an action (or actions) that a principal can take.
-    [#next-free-field: 11]
+    [#next-free-field: 13]
     """
 
     # A set of rules that all must match in order to define the action.
@@ -118,6 +120,11 @@ class Permission(betterproto.Message):
     destination_ip: "__core_v3__.CidrRange" = betterproto.message_field(5, group="rule")
     # A port number that describes the destination port connecting to.
     destination_port: int = betterproto.uint32_field(6, group="rule")
+    # A port number range that describes a range of destination ports connecting
+    # to.
+    destination_port_range: "___type_v3__.Int32Range" = betterproto.message_field(
+        11, group="rule"
+    )
     # Metadata that describes additional information about the action.
     metadata: "___type_matcher_v3__.MetadataMatcher" = betterproto.message_field(
         7, group="rule"
@@ -139,6 +146,11 @@ class Permission(betterproto.Message):
     # <faq_how_to_setup_sni>` to learn to setup SNI.
     requested_server_name: "___type_matcher_v3__.StringMatcher" = (
         betterproto.message_field(9, group="rule")
+    )
+    # Extension for configuring custom matchers for RBAC. [#extension-category:
+    # envoy.rbac.matchers]
+    matcher: "__core_v3__.TypedExtensionConfig" = betterproto.message_field(
+        12, group="rule"
     )
 
 
@@ -238,6 +250,7 @@ class PrincipalAuthenticated(betterproto.Message):
 
 
 from .....google.api.expr import v1alpha1 as ____google_api_expr_v1_alpha1__
+from ....type import v3 as ___type_v3__
 from ....type.matcher import v3 as ___type_matcher_v3__
 from ...core import v3 as __core_v3__
 from ...route import v3 as __route_v3__

@@ -1490,7 +1490,7 @@ class ScopedRoutesDiscoveryServiceStub(betterproto.ServiceStub):
         resource_names: Optional[List[str]] = None,
         type_url: str = "",
         response_nonce: str = "",
-        error_detail: "___google_rpc__.Status" = None,
+        error_detail: "___google_rpc__.Status" = None
     ) -> "DiscoveryResponse":
         resource_names = resource_names or []
 
@@ -1550,7 +1550,7 @@ class ClusterDiscoveryServiceStub(betterproto.ServiceStub):
         resource_names: Optional[List[str]] = None,
         type_url: str = "",
         response_nonce: str = "",
-        error_detail: "___google_rpc__.Status" = None,
+        error_detail: "___google_rpc__.Status" = None
     ) -> "DiscoveryResponse":
         resource_names = resource_names or []
 
@@ -1610,7 +1610,7 @@ class RouteDiscoveryServiceStub(betterproto.ServiceStub):
         resource_names: Optional[List[str]] = None,
         type_url: str = "",
         response_nonce: str = "",
-        error_detail: "___google_rpc__.Status" = None,
+        error_detail: "___google_rpc__.Status" = None
     ) -> "DiscoveryResponse":
         resource_names = resource_names or []
 
@@ -1687,7 +1687,7 @@ class EndpointDiscoveryServiceStub(betterproto.ServiceStub):
         resource_names: Optional[List[str]] = None,
         type_url: str = "",
         response_nonce: str = "",
-        error_detail: "___google_rpc__.Status" = None,
+        error_detail: "___google_rpc__.Status" = None
     ) -> "DiscoveryResponse":
         resource_names = resource_names or []
 
@@ -1747,7 +1747,7 @@ class ListenerDiscoveryServiceStub(betterproto.ServiceStub):
         resource_names: Optional[List[str]] = None,
         type_url: str = "",
         response_nonce: str = "",
-        error_detail: "___google_rpc__.Status" = None,
+        error_detail: "___google_rpc__.Status" = None
     ) -> "DiscoveryResponse":
         resource_names = resource_names or []
 

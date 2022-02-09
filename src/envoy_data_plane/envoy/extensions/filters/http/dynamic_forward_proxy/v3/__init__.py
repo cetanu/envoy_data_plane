@@ -22,6 +22,11 @@ class FilterConfig(betterproto.Message):
     dns_cache_config: "____common_dynamic_forward_proxy_v3__.DnsCacheConfig" = (
         betterproto.message_field(1)
     )
+    # When this flag is set, the filter will add the resolved upstream address in
+    # the filter state. The state should be saved with key
+    # `envoy.stream.upstream_address` (See
+    # :repo:`upstream_address.h<source/common/stream_info/upstream_address.h>`).
+    save_upstream_address: bool = betterproto.bool_field(2)
 
 
 @dataclass(eq=False, repr=False)

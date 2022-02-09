@@ -26,7 +26,7 @@ class JwtProvider(betterproto.Message):
     bookstore_web.apps.googleusercontent.com     remote_jwks:       http_uri:
     uri: https://example.com/.well-known/jwks.json         cluster:
     example_jwks_cluster         timeout: 1s       cache_duration:
-    seconds: 300 [#next-free-field: 12]
+    seconds: 300 [#next-free-field: 15]
     """
 
     # Specify the `principal
@@ -72,6 +72,8 @@ class JwtProvider(betterproto.Message):
     )
     # If false, the JWT is removed in the request after a success verification.
     # If true, the JWT is not removed in the request. Default value is false.
+    # caveat: only works for from_header & has no effect for JWTs extracted
+    # through from_params & from_cookies.
     forward: bool = betterproto.bool_field(5)
     # Two fields below define where to extract the JWT from an HTTP request. If
     # no explicit location is specified, the following default locations are
@@ -91,6 +93,11 @@ class JwtProvider(betterproto.Message):
     # from_params:   - jwt_token The JWT format in query parameter is::
     # /path?jwt_token=<JWT>
     from_params: List[str] = betterproto.string_field(7)
+    # JWT is sent in a cookie. `from_cookies` represents the cookie names to
+    # extract from. For example, if config is: .. code-block:: yaml
+    # from_cookies:   - auth-token Then JWT will be extracted from `auth-token`
+    # cookie in the request.
+    from_cookies: List[str] = betterproto.string_field(13)
     # This field specifies the header name to forward a successfully verified JWT
     # payload to the backend. The forwarded data is::
     # base64url_encoded(jwt_payload_in_JSON) If it is not specified, the payload
@@ -114,9 +121,43 @@ class JwtProvider(betterproto.Message):
     # https://example.com       sub: test@example.com       aud:
     # https://example.com       exp: 1501281058
     payload_in_metadata: str = betterproto.string_field(9)
+    # If not empty, similar to :ref:`payload_in_metadata <envoy_v3_api_field_exte
+    # nsions.filters.http.jwt_authn.v3.JwtProvider.payload_in_metadata>`, a
+    # successfully verified JWT header will be written to :ref:`Dynamic State
+    # <arch_overview_data_sharing_between_filters>` as an entry
+    # (``protobuf::Struct``) in **envoy.filters.http.jwt_authn** *namespace* with
+    # the value of this field as the key. For example, if ``header_in_metadata``
+    # is *my_header*: .. code-block:: yaml   envoy.filters.http.jwt_authn:
+    # my_header:       alg: JWT       kid: EF71iSaosbC5C4tC6Syq1Gm647M       alg:
+    # PS256 When the metadata has **envoy.filters.http.jwt_authn** entry already
+    # (for example if :ref:`payload_in_metadata <envoy_v3_api_field_extensions.fi
+    # lters.http.jwt_authn.v3.JwtProvider.payload_in_metadata>` is not empty), it
+    # will be inserted as a new entry in the same *namespace* as shown below: ..
+    # code-block:: yaml   envoy.filters.http.jwt_authn:     my_payload:
+    # iss: https://example.com       sub: test@example.com       aud:
+    # https://example.com       exp: 1501281058     my_header:       alg: JWT
+    # kid: EF71iSaosbC5C4tC6Syq1Gm647M       alg: PS256 .. warning::   Using the
+    # same key name for :ref:`header_in_metadata <envoy_v3_api_field_extensions.f
+    # ilters.http.jwt_authn.v3.JwtProvider.payload_in_metadata>`   and
+    # :ref:`payload_in_metadata <envoy_v3_api_field_extensions.filters.http.jwt_a
+    # uthn.v3.JwtProvider.payload_in_metadata>`   is not suggested due to
+    # potential override of existing entry, while it is not enforced during
+    # config validation.
+    header_in_metadata: str = betterproto.string_field(14)
     # Specify the clock skew in seconds when verifying JWT time constraint, such
     # as `exp`, and `nbf`. If not specified, default is 60 seconds.
     clock_skew_seconds: int = betterproto.uint32_field(10)
+    # Enables JWT cache, its size is specified by *jwt_cache_size*. Only valid
+    # JWT tokens are cached.
+    jwt_cache_config: "JwtCacheConfig" = betterproto.message_field(12)
+
+
+@dataclass(eq=False, repr=False)
+class JwtCacheConfig(betterproto.Message):
+    """This message specifies JWT Cache configuration."""
+
+    # The unit is number of JWT tokens, default to 100.
+    jwt_cache_size: int = betterproto.uint32_field(1)
 
 
 @dataclass(eq=False, repr=False)
@@ -143,6 +184,19 @@ class RemoteJwks(betterproto.Message):
     # own. * Jwks is ready when the requests come, not need to wait for the Jwks
     # fetching.
     async_fetch: "JwksAsyncFetch" = betterproto.message_field(3)
+    # Retry policy for fetching Jwks. optional. turned off by default. For
+    # example: .. code-block:: yaml   retry_policy:     retry_back_off:
+    # base_interval: 0.01s       max_interval: 20s     num_retries: 10 will yield
+    # a randomized truncated exponential backoff policy with an initial delay of
+    # 10ms 10 maximum attempts spaced at most 20s seconds. .. code-block:: yaml
+    # retry_policy:     num_retries:1 uses the default :ref:`retry backoff
+    # strategy <envoy_v3_api_msg_config.core.v3.BackoffStrategy>`. with the
+    # default base interval is 1000 milliseconds. and the default maximum
+    # interval of 10 times the base interval. if num_retries is omitted, the
+    # default is to allow only one retry. If enabled, the retry policy will apply
+    # to all Jwks fetching approaches, e.g. on demand or asynchronously in
+    # background.
+    retry_policy: "_____config_core_v3__.RetryPolicy" = betterproto.message_field(4)
 
 
 @dataclass(eq=False, repr=False)

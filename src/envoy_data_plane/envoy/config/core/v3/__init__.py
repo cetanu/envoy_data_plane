@@ -62,6 +62,12 @@ class TrafficDirection(betterproto.Enum):
     OUTBOUND = 2
 
 
+class HeaderValueOptionHeaderAppendAction(betterproto.Enum):
+    APPEND_IF_EXISTS_OR_ADD = 0
+    ADD_IF_ABSENT = 1
+    OVERWRITE_IF_EXISTS_OR_ADD = 2
+
+
 class ApiVersion(betterproto.Enum):
     """
     xDS API and non-xDS services version. This is used to describe both
@@ -561,6 +567,12 @@ class HeaderValueOption(betterproto.Message):
     # Should the value be appended? If true (default), the value is appended to
     # existing values. Otherwise it replaces any existing values.
     append: Optional[bool] = betterproto.message_field(2, wraps=betterproto.TYPE_BOOL)
+    # [#not-implemented-hide:] Describes the action taken to append/overwrite the
+    # given value for an existing header or to only add this header if it's
+    # absent. Value defaults to :ref:`APPEND_IF_EXISTS_OR_ADD<envoy_v3_api_enum_v
+    # alue_config.core.v3.HeaderValueOption.HeaderAppendAction.APPEND_IF_EXISTS_O
+    # R_ADD>`.
+    append_action: "HeaderValueOptionHeaderAppendAction" = betterproto.enum_field(3)
 
 
 @dataclass(eq=False, repr=False)
@@ -1453,14 +1465,27 @@ class QuicProtocolOptions(betterproto.Message):
 class UpstreamHttpProtocolOptions(betterproto.Message):
     # Set transport socket `SNI
     # <https://en.wikipedia.org/wiki/Server_Name_Indication>`_ for new upstream
-    # connections based on the downstream HTTP host/authority header, as seen by
-    # the :ref:`router filter <config_http_filters_router>`.
+    # connections based on the downstream HTTP host/authority header or any other
+    # arbitrary header when :ref:`override_auto_sni_header <envoy_v3_api_field_co
+    # nfig.core.v3.UpstreamHttpProtocolOptions.override_auto_sni_header>` is set,
+    # as seen by the :ref:`router filter <config_http_filters_router>`.
     auto_sni: bool = betterproto.bool_field(1)
     # Automatic validate upstream presented certificate for new upstream
-    # connections based on the downstream HTTP host/authority header, as seen by
-    # the :ref:`router filter <config_http_filters_router>`. This field is
-    # intended to set with `auto_sni` field.
+    # connections based on the downstream HTTP host/authority header or any other
+    # arbitrary header when :ref:`override_auto_sni_header <envoy_v3_api_field_co
+    # nfig.core.v3.UpstreamHttpProtocolOptions.override_auto_sni_header>` is set,
+    # as seen by the :ref:`router filter <config_http_filters_router>`. This
+    # field is intended to be set with `auto_sni` field.
     auto_san_validation: bool = betterproto.bool_field(2)
+    # An optional alternative to the host/authority header to be used for setting
+    # the SNI value. It should be a valid downstream HTTP header, as seen by the
+    # :ref:`router filter <config_http_filters_router>`. If unset, host/authority
+    # header will be used for populating the SNI. If the specified header is not
+    # found or the value is empty, host/authority header will be used instead.
+    # This field is intended to be set with `auto_sni` and/or
+    # `auto_san_validation` fields. If none of these fields are set then setting
+    # this would be a no-op.
+    override_auto_sni_header: str = betterproto.string_field(3)
 
 
 @dataclass(eq=False, repr=False)
@@ -1468,7 +1493,7 @@ class AlternateProtocolsCacheOptions(betterproto.Message):
     """
     Configures the alternate protocols cache which tracks alternate protocols
     that can be used to make an HTTP connection to an origin server. See
-    https://tools.ietf.org/html/rfc7838 for HTTP Alternate Services and
+    https://tools.ietf.org/html/rfc7838 for HTTP Alternative Services and
     https://datatracker.ietf.org/doc/html/draft-ietf-dnsop-svcb-https-04 for
     the "HTTPS" DNS resource record.
     """
@@ -1488,11 +1513,16 @@ class AlternateProtocolsCacheOptions(betterproto.Message):
     max_entries: Optional[int] = betterproto.message_field(
         2, wraps=betterproto.TYPE_UINT32
     )
+    # Allows configuring a persistent :ref:`key value store
+    # <envoy_v3_api_msg_config.common.key_value.v3.KeyValueStoreConfig>` to flush
+    # alternate protocols entries to disk. This function is currently only
+    # supported if concurrency is 1
+    key_value_store_config: "TypedExtensionConfig" = betterproto.message_field(3)
 
 
 @dataclass(eq=False, repr=False)
 class HttpProtocolOptions(betterproto.Message):
-    """[#next-free-field: 6]"""
+    """[#next-free-field: 7]"""
 
     # The idle timeout for connections. The idle timeout is defined as the period
     # in which there are no active requests. When the idle timeout is reached the
@@ -1514,11 +1544,12 @@ class HttpProtocolOptions(betterproto.Message):
     idle_timeout: timedelta = betterproto.message_field(1)
     # The maximum duration of a connection. The duration is defined as a period
     # since a connection was established. If not set, there is no max duration.
-    # When max_connection_duration is reached the connection will be closed.
-    # Drain sequence will occur prior to closing the connection if if's
-    # applicable. See :ref:`drain_timeout <envoy_v3_api_field_extensions.filters.
-    # network.http_connection_manager.v3.HttpConnectionManager.drain_timeout>`.
-    # Note: not implemented for upstream connections.
+    # When max_connection_duration is reached and if there are no active streams,
+    # the connection will be closed. If there are any active streams, the drain
+    # sequence will kick-in, and the connection will be force-closed after the
+    # drain period. See :ref:`drain_timeout <envoy_v3_api_field_extensions.filter
+    # s.network.http_connection_manager.v3.HttpConnectionManager.drain_timeout>`.
+    # Note: This feature is not yet implemented for the upstream connections.
     max_connection_duration: timedelta = betterproto.message_field(3)
     # The maximum number of headers. If unconfigured, the default maximum number
     # of request headers allowed is 100. Requests that exceed this limit will
@@ -1536,6 +1567,13 @@ class HttpProtocolOptions(betterproto.Message):
     # setting.
     headers_with_underscores_action: "HttpProtocolOptionsHeadersWithUnderscoresAction" = betterproto.enum_field(
         5
+    )
+    # Optional maximum requests for both upstream and downstream connections. If
+    # not specified, there is no limit. Setting this parameter to 1 will
+    # effectively disable keep alive. For HTTP/2 and HTTP/3, due to concurrent
+    # stream processing, the limit is approximate.
+    max_requests_per_connection: Optional[int] = betterproto.message_field(
+        6, wraps=betterproto.TYPE_UINT32
     )
 
 
@@ -1835,7 +1873,7 @@ class GrpcProtocolOptions(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class Http3ProtocolOptions(betterproto.Message):
-    """A message which allows using HTTP/3."""
+    """A message which allows using HTTP/3. [#next-free-field: 6]"""
 
     quic_protocol_options: "QuicProtocolOptions" = betterproto.message_field(1)
     # Allows invalid HTTP messaging and headers. When this option is disabled
@@ -1848,6 +1886,12 @@ class Http3ProtocolOptions(betterproto.Message):
     override_stream_error_on_invalid_http_message: Optional[
         bool
     ] = betterproto.message_field(2, wraps=betterproto.TYPE_BOOL)
+    # Allows proxying Websocket and other upgrades over HTTP/3 CONNECT using the
+    # header mechanisms from the `HTTP/2 extended connect RFC
+    # <https://datatracker.ietf.org/doc/html/rfc8441>`_ and settings `proposed
+    # for HTTP/3 <https://datatracker.ietf.org/doc/draft-ietf-
+    # httpbis-h3-websockets/>`_ Note that HTTP/3 CONNECT is not yet an RFC.
+    allow_extended_connect: bool = betterproto.bool_field(5)
 
 
 @dataclass(eq=False, repr=False)

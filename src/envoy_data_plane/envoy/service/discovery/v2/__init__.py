@@ -178,7 +178,7 @@ class HealthDiscoveryServiceStub(betterproto.ServiceStub):
         self,
         *,
         health_check_request: "HealthCheckRequest" = None,
-        endpoint_health_response: "EndpointHealthResponse" = None,
+        endpoint_health_response: "EndpointHealthResponse" = None
     ) -> "HealthCheckSpecifier":
 
         request = HealthCheckRequestOrEndpointHealthResponse()
@@ -235,7 +235,7 @@ class SecretDiscoveryServiceStub(betterproto.ServiceStub):
         resource_names: Optional[List[str]] = None,
         type_url: str = "",
         response_nonce: str = "",
-        error_detail: "___google_rpc__.Status" = None,
+        error_detail: "___google_rpc__.Status" = None
     ) -> "___api_v2__.DiscoveryResponse":
         resource_names = resource_names or []
 
@@ -297,7 +297,7 @@ class RuntimeDiscoveryServiceStub(betterproto.ServiceStub):
         resource_names: Optional[List[str]] = None,
         type_url: str = "",
         response_nonce: str = "",
-        error_detail: "___google_rpc__.Status" = None,
+        error_detail: "___google_rpc__.Status" = None
     ) -> "___api_v2__.DiscoveryResponse":
         resource_names = resource_names or []
 

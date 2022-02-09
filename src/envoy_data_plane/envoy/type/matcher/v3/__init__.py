@@ -111,7 +111,7 @@ class StringMatcher(betterproto.Message):
     # contains match is not allowed, please use regex instead. Examples: * *abc*
     # matches the value *xyz.abc.def*
     contains: str = betterproto.string_field(7, group="match_pattern")
-    # If true, indicates the exact/prefix/suffix matching should be case
+    # If true, indicates the exact/prefix/suffix/contains matching should be case
     # insensitive. This has no effect for the safe_regex match. For example, the
     # matcher *data* will match both input string *Data* and *data* if set to
     # true.
@@ -195,6 +195,8 @@ class MetadataMatcher(betterproto.Message):
     # The MetadataMatcher is matched if the value retrieved by path is matched to
     # this value.
     value: "ValueMatcher" = betterproto.message_field(3)
+    # If true, the match result will be inverted.
+    invert: bool = betterproto.bool_field(4)
 
 
 @dataclass(eq=False, repr=False)

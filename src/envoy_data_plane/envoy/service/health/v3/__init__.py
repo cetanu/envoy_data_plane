@@ -126,6 +126,17 @@ class HealthCheckSpecifier(betterproto.Message):
     interval: timedelta = betterproto.message_field(2)
 
 
+@dataclass(eq=False, repr=False)
+class HdsDummy(betterproto.Message):
+    """
+    [#not-implemented-hide:] Not configuration. Workaround c++ protobuf issue
+    with importing services: https://github.com/google/protobuf/issues/4221 and
+    protoxform to upgrade the file.
+    """
+
+    pass
+
+
 class HealthDiscoveryServiceStub(betterproto.ServiceStub):
     async def stream_health_check(
         self,
@@ -147,7 +158,7 @@ class HealthDiscoveryServiceStub(betterproto.ServiceStub):
         self,
         *,
         health_check_request: "HealthCheckRequest" = None,
-        endpoint_health_response: "EndpointHealthResponse" = None,
+        endpoint_health_response: "EndpointHealthResponse" = None
     ) -> "HealthCheckSpecifier":
 
         request = HealthCheckRequestOrEndpointHealthResponse()

@@ -97,6 +97,26 @@ class OverloadAction(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class BufferFactoryConfig(betterproto.Message):
+    """
+    Configuration for which accounts the WatermarkBuffer Factories should
+    track.
+    """
+
+    # The minimum power of two at which Envoy starts tracking an account. Envoy
+    # has 8 power of two buckets starting with the provided exponent below.
+    # Concretely the 1st bucket contains accounts for streams that use
+    # [2^minimum_account_to_track_power_of_two,
+    # 2^(minimum_account_to_track_power_of_two + 1)) bytes. With the 8th bucket
+    # tracking accounts >= 128 * 2^minimum_account_to_track_power_of_two. The
+    # maximum value is 56, since we're using uint64_t for bytes counting, and
+    # that's the last value that would use the 8 buckets. In practice, we don't
+    # expect the proxy to be holding 2^56 bytes. If omitted, Envoy should not do
+    # any tracking.
+    minimum_account_to_track_power_of_two: int = betterproto.uint32_field(1)
+
+
+@dataclass(eq=False, repr=False)
 class OverloadManager(betterproto.Message):
     # The interval for refreshing resource usage.
     refresh_interval: timedelta = betterproto.message_field(1)
@@ -104,6 +124,8 @@ class OverloadManager(betterproto.Message):
     resource_monitors: List["ResourceMonitor"] = betterproto.message_field(2)
     # The set of overload actions.
     actions: List["OverloadAction"] = betterproto.message_field(3)
+    # Configuration for buffer factory.
+    buffer_factory_config: "BufferFactoryConfig" = betterproto.message_field(4)
 
 
 from ....type import v3 as ___type_v3__

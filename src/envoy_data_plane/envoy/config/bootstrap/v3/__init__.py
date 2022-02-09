@@ -18,11 +18,18 @@ class WatchdogWatchdogActionWatchdogEvent(betterproto.Enum):
     MISS = 4
 
 
+class CustomInlineHeaderInlineHeaderType(betterproto.Enum):
+    REQUEST_HEADER = 0
+    REQUEST_TRAILER = 1
+    RESPONSE_HEADER = 2
+    RESPONSE_TRAILER = 3
+
+
 @dataclass(eq=False, repr=False)
 class Bootstrap(betterproto.Message):
     """
     Bootstrap :ref:`configuration overview <config_overview_bootstrap>`.
-    [#next-free-field: 31]
+    [#next-free-field: 33]
     """
 
     # Node identity to present to the management server and for instance
@@ -131,9 +138,28 @@ class Bootstrap(betterproto.Message):
     # addresses and options. This may be overridden on a per-cluster basis in
     # cds_config, when :ref:`dns_resolution_config
     # <envoy_v3_api_field_config.cluster.v3.Cluster.dns_resolution_config>` is
-    # specified.
+    # specified. *dns_resolution_config* will be deprecated once
+    # :ref:'typed_dns_resolver_config <envoy_v3_api_field_config.bootstrap.v3.Boo
+    # tstrap.typed_dns_resolver_config>' is fully supported.
     dns_resolution_config: "__core_v3__.DnsResolutionConfig" = (
         betterproto.message_field(30)
+    )
+    # DNS resolver type configuration extension. This extension can be used to
+    # configure c-ares, apple, or any other DNS resolver types and the related
+    # parameters. For example, an object of :ref:`DnsResolutionConfig
+    # <envoy_v3_api_msg_config.core.v3.DnsResolutionConfig>` can be packed into
+    # this *typed_dns_resolver_config*. This configuration will replace the
+    # :ref:'dns_resolution_config
+    # <envoy_v3_api_field_config.bootstrap.v3.Bootstrap.dns_resolution_config>'
+    # configuration eventually. TODO(yanjunxiang): Investigate the deprecation
+    # plan for *dns_resolution_config*. During the transition period when both
+    # *dns_resolution_config* and *typed_dns_resolver_config* exists, this
+    # configuration is optional. When *typed_dns_resolver_config* is in place,
+    # Envoy will use it and ignore *dns_resolution_config*. When
+    # *typed_dns_resolver_config* is missing, the default behavior is in place.
+    # [#not-implemented-hide:]
+    typed_dns_resolver_config: "__core_v3__.TypedExtensionConfig" = (
+        betterproto.message_field(31)
     )
     # Specifies optional bootstrap extensions to be instantiated at startup time.
     # Each item contains extension specific configuration. [#extension-category:
@@ -173,6 +199,11 @@ class Bootstrap(betterproto.Message):
     certificate_provider_instances: Dict[
         str, "__core_v3__.TypedExtensionConfig"
     ] = betterproto.map_field(25, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE)
+    # Specifies a set of headers that need to be registered as inline header.
+    # This configuration allows users to customize the inline headers on-demand
+    # at Envoy startup without modifying Envoy's source code. Note that the 'set-
+    # cookie' header cannot be registered as inline header.
+    inline_headers: List["CustomInlineHeader"] = betterproto.message_field(32)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -479,6 +510,28 @@ class LayeredRuntime(betterproto.Message):
     # The :ref:`layers <config_runtime_layering>` of the runtime. This is ordered
     # such that later layers in the list overlay earlier entries.
     layers: List["RuntimeLayer"] = betterproto.message_field(1)
+
+
+@dataclass(eq=False, repr=False)
+class CustomInlineHeader(betterproto.Message):
+    """
+    Used to specify the header that needs to be registered as an inline header.
+    If request or response contain multiple headers with the same name and the
+    header name is registered as an inline header. Then multiple headers will
+    be folded into one, and multiple header values will be concatenated by a
+    suitable delimiter. The delimiter is generally a comma. For example, if
+    'foo' is registered as an inline header, and the headers contains the
+    following two headers: .. code-block:: text   foo: bar   foo: eep Then they
+    will eventually be folded into: .. code-block:: text   foo: bar, eep Inline
+    headers provide O(1) search performance, but each inline header imposes an
+    additional memory overhead on all instances of the corresponding type of
+    HeaderMap or TrailerMap.
+    """
+
+    # The name of the header that is expected to be set as the inline header.
+    inline_header_name: str = betterproto.string_field(1)
+    # The type of the header that is expected to be set as the inline header.
+    inline_header_type: "CustomInlineHeaderInlineHeaderType" = betterproto.enum_field(2)
 
 
 from ....extensions.transport_sockets.tls import (

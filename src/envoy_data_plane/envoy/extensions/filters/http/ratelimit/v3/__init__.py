@@ -3,6 +3,7 @@
 # plugin: python-betterproto
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import List
 
 import betterproto
 from betterproto.grpc.grpclib_server import ServiceBase
@@ -13,10 +14,22 @@ class RateLimitXRateLimitHeadersRfcVersion(betterproto.Enum):
     DRAFT_VERSION_03 = 1
 
 
+class RateLimitConfigActionMetaDataSource(betterproto.Enum):
+    DYNAMIC = 0
+    ROUTE_ENTRY = 1
+
+
 class RateLimitPerRouteVhRateLimitsOptions(betterproto.Enum):
     OVERRIDE = 0
     INCLUDE = 1
     IGNORE = 2
+
+
+class RateLimitPerRouteOverrideOptions(betterproto.Enum):
+    DEFAULT = 0
+    OVERRIDE_POLICY = 1
+    INCLUDE_POLICY = 2
+    IGNORE_POLICY = 3
 
 
 @dataclass(eq=False, repr=False)
@@ -83,10 +96,233 @@ class RateLimit(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class RateLimitConfig(betterproto.Message):
+    """
+    Global rate limiting :ref:`architecture overview
+    <arch_overview_global_rate_limit>`. Also applies to Local rate limiting
+    :ref:`using descriptors
+    <config_http_filters_local_rate_limit_descriptors>`. [#not-implemented-
+    hide:]
+    """
+
+    # Refers to the stage set in the filter. The rate limit configuration only
+    # applies to filters with the same stage number. The default stage number is
+    # 0. .. note::   The filter supports a range of 0 - 10 inclusively for stage
+    # numbers.
+    stage: int = betterproto.uint32_field(1)
+    # The key to be set in runtime to disable this rate limit configuration.
+    disable_key: str = betterproto.string_field(2)
+    # A list of actions that are to be applied for this rate limit configuration.
+    # Order matters as the actions are processed sequentially and the descriptor
+    # is composed by appending descriptor entries in that sequence. If an action
+    # cannot append a descriptor entry, no descriptor is generated for the
+    # configuration. See :ref:`composing actions
+    # <config_http_filters_rate_limit_composing_actions>` for additional
+    # documentation.
+    actions: List["RateLimitConfigAction"] = betterproto.message_field(3)
+    # An optional limit override to be appended to the descriptor produced by
+    # this rate limit configuration. If the override value is invalid or cannot
+    # be resolved from metadata, no override is provided. See :ref:`rate limit
+    # override <config_http_filters_rate_limit_rate_limit_override>` for more
+    # information.
+    limit: "RateLimitConfigOverride" = betterproto.message_field(4)
+
+
+@dataclass(eq=False, repr=False)
+class RateLimitConfigAction(betterproto.Message):
+    """[#next-free-field: 10]"""
+
+    # Rate limit on source cluster.
+    source_cluster: "RateLimitConfigActionSourceCluster" = betterproto.message_field(
+        1, group="action_specifier"
+    )
+    # Rate limit on destination cluster.
+    destination_cluster: "RateLimitConfigActionDestinationCluster" = (
+        betterproto.message_field(2, group="action_specifier")
+    )
+    # Rate limit on request headers.
+    request_headers: "RateLimitConfigActionRequestHeaders" = betterproto.message_field(
+        3, group="action_specifier"
+    )
+    # Rate limit on remote address.
+    remote_address: "RateLimitConfigActionRemoteAddress" = betterproto.message_field(
+        4, group="action_specifier"
+    )
+    # Rate limit on a generic key.
+    generic_key: "RateLimitConfigActionGenericKey" = betterproto.message_field(
+        5, group="action_specifier"
+    )
+    # Rate limit on the existence of request headers.
+    header_value_match: "RateLimitConfigActionHeaderValueMatch" = (
+        betterproto.message_field(6, group="action_specifier")
+    )
+    # Rate limit on metadata.
+    metadata: "RateLimitConfigActionMetaData" = betterproto.message_field(
+        8, group="action_specifier"
+    )
+    # Rate limit descriptor extension. See the rate limit descriptor extensions
+    # documentation. [#extension-category: envoy.rate_limit_descriptors]
+    extension: "_____config_core_v3__.TypedExtensionConfig" = betterproto.message_field(
+        9, group="action_specifier"
+    )
+
+
+@dataclass(eq=False, repr=False)
+class RateLimitConfigActionSourceCluster(betterproto.Message):
+    """
+    The following descriptor entry is appended to the descriptor: .. code-
+    block:: cpp   ("source_cluster", "<local service cluster>") <local service
+    cluster> is derived from the :option:`--service-cluster` option.
+    """
+
+    pass
+
+
+@dataclass(eq=False, repr=False)
+class RateLimitConfigActionDestinationCluster(betterproto.Message):
+    """
+    The following descriptor entry is appended to the descriptor: .. code-
+    block:: cpp   ("destination_cluster", "<routed target cluster>") Once a
+    request matches against a route table rule, a routed cluster is determined
+    by one of the following :ref:`route table configuration
+    <envoy_v3_api_msg_config.route.v3.RouteConfiguration>` settings: *
+    :ref:`cluster <envoy_v3_api_field_config.route.v3.RouteAction.cluster>`
+    indicates the upstream cluster   to route to. * :ref:`weighted_clusters
+    <envoy_v3_api_field_config.route.v3.RouteAction.weighted_clusters>`
+    chooses a cluster randomly from a set of clusters with attributed weight. *
+    :ref:`cluster_header
+    <envoy_v3_api_field_config.route.v3.RouteAction.cluster_header>` indicates
+    which   header in the request contains the target cluster.
+    """
+
+    pass
+
+
+@dataclass(eq=False, repr=False)
+class RateLimitConfigActionRequestHeaders(betterproto.Message):
+    """
+    The following descriptor entry is appended when a header contains a key
+    that matches the *header_name*: .. code-block:: cpp   ("<descriptor_key>",
+    "<header_value_queried_from_header>")
+    """
+
+    # The header name to be queried from the request headers. The header’s value
+    # is used to populate the value of the descriptor entry for the
+    # descriptor_key.
+    header_name: str = betterproto.string_field(1)
+    # The key to use in the descriptor entry.
+    descriptor_key: str = betterproto.string_field(2)
+    # If set to true, Envoy skips the descriptor while calling rate limiting
+    # service when header is not present in the request. By default it skips
+    # calling the rate limiting service if this header is not present in the
+    # request.
+    skip_if_absent: bool = betterproto.bool_field(3)
+
+
+@dataclass(eq=False, repr=False)
+class RateLimitConfigActionRemoteAddress(betterproto.Message):
+    """
+    The following descriptor entry is appended to the descriptor and is
+    populated using the trusted address from :ref:`x-forwarded-for
+    <config_http_conn_man_headers_x-forwarded-for>`: .. code-block:: cpp
+    ("remote_address", "<trusted address from x-forwarded-for>")
+    """
+
+    pass
+
+
+@dataclass(eq=False, repr=False)
+class RateLimitConfigActionGenericKey(betterproto.Message):
+    """
+    The following descriptor entry is appended to the descriptor: .. code-
+    block:: cpp   ("generic_key", "<descriptor_value>")
+    """
+
+    # The value to use in the descriptor entry.
+    descriptor_value: str = betterproto.string_field(1)
+    # An optional key to use in the descriptor entry. If not set it defaults to
+    # 'generic_key' as the descriptor key.
+    descriptor_key: str = betterproto.string_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class RateLimitConfigActionHeaderValueMatch(betterproto.Message):
+    """
+    The following descriptor entry is appended to the descriptor: .. code-
+    block:: cpp   ("header_match", "<descriptor_value>")
+    """
+
+    # The value to use in the descriptor entry.
+    descriptor_value: str = betterproto.string_field(1)
+    # If set to true, the action will append a descriptor entry when the request
+    # matches the headers. If set to false, the action will append a descriptor
+    # entry when the request does not match the headers. The default value is
+    # true.
+    expect_match: bool = betterproto.bool_field(2)
+    # Specifies a set of headers that the rate limit action should match on. The
+    # action will check the request’s headers against all the specified headers
+    # in the config. A match will happen if all the headers in the config are
+    # present in the request with the same values (or based on presence if the
+    # value field is not in the config).
+    headers: List["_____config_route_v3__.HeaderMatcher"] = betterproto.message_field(3)
+
+
+@dataclass(eq=False, repr=False)
+class RateLimitConfigActionMetaData(betterproto.Message):
+    """
+    The following descriptor entry is appended when the metadata contains a key
+    value: .. code-block:: cpp   ("<descriptor_key>",
+    "<value_queried_from_metadata>")
+    """
+
+    # The key to use in the descriptor entry.
+    descriptor_key: str = betterproto.string_field(1)
+    # Metadata struct that defines the key and path to retrieve the string value.
+    # A match will only happen if the value in the metadata is of type string.
+    metadata_key: "_____type_metadata_v3__.MetadataKey" = betterproto.message_field(2)
+    # An optional value to use if *metadata_key* is empty. If not set and no
+    # value is present under the metadata_key then no descriptor is generated.
+    default_value: str = betterproto.string_field(3)
+    # Source of metadata
+    source: "RateLimitConfigActionMetaDataSource" = betterproto.enum_field(4)
+
+
+@dataclass(eq=False, repr=False)
+class RateLimitConfigOverride(betterproto.Message):
+    # Limit override from dynamic metadata.
+    dynamic_metadata: "RateLimitConfigOverrideDynamicMetadata" = (
+        betterproto.message_field(1, group="override_specifier")
+    )
+
+
+@dataclass(eq=False, repr=False)
+class RateLimitConfigOverrideDynamicMetadata(betterproto.Message):
+    """Fetches the override from the dynamic metadata."""
+
+    # Metadata struct that defines the key and path to retrieve the struct value.
+    # The value must be a struct containing an integer "requests_per_unit"
+    # property and a "unit" property with a value parseable to
+    # :ref:`RateLimitUnit enum <envoy_v3_api_enum_type.v3.RateLimitUnit>`
+    metadata_key: "_____type_metadata_v3__.MetadataKey" = betterproto.message_field(1)
+
+
+@dataclass(eq=False, repr=False)
 class RateLimitPerRoute(betterproto.Message):
     # Specifies if the rate limit filter should include the virtual host rate
     # limits.
     vh_rate_limits: "RateLimitPerRouteVhRateLimitsOptions" = betterproto.enum_field(1)
+    # Specifies if the rate limit filter should include the lower levels (route
+    # level, virtual host level or cluster weight level) rate limits override
+    # options. [#not-implemented-hide:]
+    override_option: "RateLimitPerRouteOverrideOptions" = betterproto.enum_field(2)
+    # Rate limit configuration. If not set, uses the :ref:`VirtualHost.rate_limit
+    # s<envoy_v3_api_field_config.route.v3.VirtualHost.rate_limits>` or :ref:`Rou
+    # teAction.rate_limits<envoy_v3_api_field_config.route.v3.RouteAction.rate_li
+    # mits>` fields instead. [#not-implemented-hide:]
+    rate_limits: List["RateLimitConfig"] = betterproto.message_field(3)
 
 
+from ......config.core import v3 as _____config_core_v3__
 from ......config.ratelimit import v3 as _____config_ratelimit_v3__
+from ......config.route import v3 as _____config_route_v3__
+from ......type.metadata import v3 as _____type_metadata_v3__

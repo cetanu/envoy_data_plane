@@ -15,17 +15,14 @@ class FaultDelayFaultDelayType(betterproto.Enum):
 @dataclass(eq=False, repr=False)
 class FaultDelay(betterproto.Message):
     """
-    Delay specification is used to inject latency into the
-    HTTP/gRPC/Mongo/Redis operation or delay proxying of TCP connections.
-    [#next-free-field: 6]
+    Delay specification is used to inject latency into the HTTP/Mongo
+    operation. [#next-free-field: 6]
     """
 
     # Add a fixed delay before forwarding the operation upstream. See
     # https://developers.google.com/protocol-buffers/docs/proto3#json for the
-    # JSON/YAML Duration mapping. For HTTP/Mongo/Redis, the specified delay will
-    # be injected before a new request/operation. For TCP connections, the
-    # proxying of the connection upstream will be delayed for the specified
-    # period. This is required if type is FIXED.
+    # JSON/YAML Duration mapping. For HTTP/Mongo, the specified delay will be
+    # injected before a new request/operation. This is required if type is FIXED.
     fixed_delay: timedelta = betterproto.message_field(3, group="fault_delay_secifier")
     # Fault delays are controlled via an HTTP header (if applicable).
     header_delay: "FaultDelayHeaderDelay" = betterproto.message_field(

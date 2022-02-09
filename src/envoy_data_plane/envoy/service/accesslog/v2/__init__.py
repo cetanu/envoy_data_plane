@@ -2,7 +2,7 @@
 # sources: envoy/service/accesslog/v2/als.proto
 # plugin: python-betterproto
 from dataclasses import dataclass
-from typing import AsyncIterable, Dict, Iterable, List, Union
+from typing import AsyncIterable, AsyncIterator, Dict, Iterable, List, Union
 
 import betterproto
 from betterproto.grpc.grpclib_server import ServiceBase
