@@ -35,6 +35,12 @@ packages = {
         directory=f"envoy-{ENVOY_VERSION}/api",
     ),
     Package(
+        url="https://github.com/cncf/xds/archive/refs/heads/main.zip",
+        name="xds",
+        namespace=".",
+        directory="xds-main",
+    ),
+    Package(
         url="https://github.com/googleapis/googleapis/archive/master.zip",
         name="google",
         namespace="google",
@@ -59,10 +65,16 @@ packages = {
         directory="opencensus-proto-0.2.0/src",
     ),
     Package(
-        url="https://github.com/prometheus/client_model/archive/refs/tags/v0.2.0.zip",
+        url="https://github.com/open-telemetry/opentelemetry-proto/archive/refs/tags/v0.9.0.zip",
+        name="opentelemetry",
+        namespace="opentelemetry",
+        directory="opentelemetry-proto-0.9.0",
+    ),
+    Package(
+        url="https://github.com/prometheus/client_model/archive/refs/heads/master.zip",
         name="prometheus",
         namespace=".",
-        directory="client_model-0.2.0",
+        directory="client_model-master",
     ),
 }
 

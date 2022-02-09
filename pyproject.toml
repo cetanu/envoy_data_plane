@@ -12,6 +12,7 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.7"
 betterproto = "^2.0.0b3"
+grpcio-tools = "^1.43.0"
 
 [tool.poetry.dev-dependencies]
 requests = "^2.25.1"
