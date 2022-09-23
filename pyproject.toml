@@ -17,7 +17,7 @@ grpcio-tools = "^1.43.0"
 [tool.poetry.dev-dependencies]
 requests = "^2.25.1"
 structlog = "^21.1.0"
-protobuf = "^3.15.6"
+protobuf = "^3.19.5"
 pytest = "^6.2.2"
 pytest-spec = "^3.1.0"
 grpcio = "^1.36.1"
