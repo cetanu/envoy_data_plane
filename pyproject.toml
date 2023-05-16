@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "envoy_data_plane"
-version = "0.5.0"
+version = "0.6.0"
 description = "Python dataclasses for the Envoy Data-Plane-API"
 authors = ["Vasili Syrakis <vsyrakis@atlassian.com>"]
 license = "MIT"
