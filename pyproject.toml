@@ -20,7 +20,7 @@ structlog = "^21.1.0"
 protobuf = "^3.15.6"
 pytest = "^6.2.2"
 pytest-spec = "^3.1.0"
-grpcio = "^1.36.1"
+grpcio = "^1.53.0"
 grpcio-tools = "^1.36.1"
 betterproto = {version = "^2.0.0b5", extras = ["compiler"]}
 
