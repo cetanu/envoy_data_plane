@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "envoy_data_plane"
-version = "0.6.1"
+version = "0.7.0"
 description = "Python dataclasses for the Envoy Data-Plane-API"
-authors = ["Vasili Syrakis <vsyrakis@atlassian.com>"]
+authors = ["Vasili Syrakis <cetanu@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [
@@ -22,7 +22,7 @@ pytest = "^6.2.2"
 pytest-spec = "^3.1.0"
 grpcio = "^1.36.1"
 grpcio-tools = "^1.36.1"
-betterproto = {version = "^2.0.0b5", extras = ["compiler"]}
+betterproto = {version = "^2.0.0b6", extras = ["compiler"]}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
