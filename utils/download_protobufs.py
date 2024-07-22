@@ -19,7 +19,7 @@ os.chdir(build_directory)
 
 utf8 = "utf-8"
 
-ENVOY_VERSION = "1.28.0"
+ENVOY_VERSION = "1.31.0"
 
 proto_include = protoc.pkg_resources.resource_filename("grpc_tools", "_proto")
 envoy = Path("./envoy")
