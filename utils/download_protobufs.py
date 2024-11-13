@@ -37,7 +37,7 @@ packages = {
     Package(
         url=f"https://github.com/envoyproxy/envoy/archive/refs/tags/v{ENVOY_VERSION}.zip",
         name="envoy",
-        namespace="envoy",
+        namespace=".",
         directory=f"envoy-{ENVOY_VERSION}/contrib",
     ),
     Package(
