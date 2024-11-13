@@ -19,7 +19,7 @@ os.chdir(build_directory)
 
 utf8 = "utf-8"
 
-ENVOY_VERSION = "1.31.0"
+ENVOY_VERSION = "1.32.0"
 
 proto_include = protoc.pkg_resources.resource_filename("grpc_tools", "_proto")
 envoy = Path("./envoy")
@@ -33,6 +33,12 @@ packages = {
         name="envoy",
         namespace="envoy",
         directory=f"envoy-{ENVOY_VERSION}/api",
+    ),
+    Package(
+        url=f"https://github.com/envoyproxy/envoy/archive/refs/tags/v{ENVOY_VERSION}.zip",
+        name="envoy",
+        namespace="envoy",
+        directory=f"envoy-{ENVOY_VERSION}/contrib",
     ),
     Package(
         url="https://github.com/cncf/xds/archive/refs/heads/main.zip",
