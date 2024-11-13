@@ -21,7 +21,7 @@ utf8 = "utf-8"
 
 ENVOY_VERSION = "1.32.0"
 
-proto_include = protoc.pkg_resources.resource_filename("grpc_tools", "_proto")
+proto_include = protoc.resources.path("grpc_tools", "_proto")
 envoy = Path("./envoy")
 envoy_api = Path("./envoy/api")
 envoy_api_v2 = Path("./envoy/api/v2")
