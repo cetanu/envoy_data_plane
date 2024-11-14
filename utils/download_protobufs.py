@@ -14,7 +14,7 @@ structlog.configure()
 logger = structlog.get_logger()
 
 
-@dataclass
+@dataclass(frozen=True)
 class Package:
     url: str
     name: str
