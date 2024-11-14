@@ -140,7 +140,7 @@ packages = {
 
 
 def compile_all():
-    proto_include = protoc.resources.path("grpc_tools", "_proto")
+    proto_include = protoc.resources.files("grpc_tools") / "_proto"
     envoy = Path("./envoy")
     envoy_api = Path("./envoy/api")
     envoy_api_v2 = Path("./envoy/api/v2")
