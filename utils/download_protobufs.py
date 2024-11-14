@@ -3,30 +3,65 @@ import shutil
 import zipfile
 import requests
 import structlog
-from collections import namedtuple
+from dataclasses import dataclass
 from copy import deepcopy
 from pathlib import Path
 from grpc_tools import protoc
 
+ENVOY_VERSION = "1.32.0"
+
 structlog.configure()
 logger = structlog.get_logger()
 
-build_directory = Path("BUILD")
-if not build_directory.exists():
-    logger.msg("Creating BUILD directory")
-    build_directory.mkdir()
-os.chdir(build_directory)
 
-utf8 = "utf-8"
+@dataclass
+class Package:
+    url: str
+    name: str
+    directory: str
+    namespace: str
 
-ENVOY_VERSION = "1.32.0"
+    @property
+    def archive(self):
+        return Path(f"{self.name}.zip")
 
-proto_include = protoc.resources.path("grpc_tools", "_proto")
-envoy = Path("./envoy")
-envoy_api = Path("./envoy/api")
-envoy_api_v2 = Path("./envoy/api/v2")
+    @property
+    def root(self):
+        return Path(self.directory) / Path(self.namespace)
 
-Package = namedtuple("Package", ["url", "name", "directory", "namespace"])
+    @property
+    def absolute_path(self):
+        return Path(self.name).absolute()
+
+    @property
+    def exists(self) -> bool:
+        ret = Path(self.name).exists()
+        if ret:
+            logger.msg(f"{self.absolute_path} exists")
+        else:
+            logger.msg(f"{self.absolute_path} does not exist")
+        return ret
+
+    def download(self):
+        logger.msg(f"Downloading {self.name} protocol buffers from Github")
+        with open(self.archive, "wb+") as zf:
+            logger.msg(f"Writing {self.archive} to disk")
+            zf.write(requests.get(self.url).content)
+
+    def extract(self):
+        logger.msg(f"Extracting {self.name} archive")
+        with zipfile.ZipFile(self.archive, "r") as zipref:
+            protos = [
+                member for member in zipref.namelist() if member.endswith(".proto")
+            ]
+            for file in protos:
+                logger.msg(f"Extracting {file}")
+                zipref.extract(member=file, path=".")
+
+        logger.msg(f"Copying {self.root} over the top of {self.name}")
+        shutil.copytree(self.root, self.name)
+
+
 packages = {
     Package(
         url=f"https://github.com/envoyproxy/envoy/archive/refs/tags/v{ENVOY_VERSION}.zip",
@@ -85,43 +120,20 @@ packages = {
 }
 
 
-for package in packages:
-    name = Path(package.name)
-    namespace = Path(package.namespace)
-    proto_root = Path(package.directory)
-    archive = Path(f"{package.name}.zip")
-
-    if not archive.exists():
-        logger.msg(f"Downloading {package.name} protocol buffers from Github")
-        with open(archive, "wb+") as zf:
-            zf.write(requests.get(package.url).content)
-
-    if name.exists():
-        logger.msg(f"{name.absolute()} exists")
-    else:
-        logger.msg(f"Extracting {name} archive")
-        with zipfile.ZipFile(archive, "r") as zipref:
-            protos = [
-                member for member in zipref.namelist() if member.endswith(".proto")
-            ]
-            for file in protos:
-                logger.msg(f"Extracting {file}")
-                zipref.extract(member=file, path=".")
-        shutil.copytree(proto_root / namespace, name)
-
-
-output = Path("../src/envoy_data_plane")
-proto_args = [
-    __file__,
-    f"--proto_path=.",
-    f"--proto_path={envoy}",
-    f"--proto_path={envoy_api}",
-    f"--proto_path={envoy_api_v2}",
-    f"--proto_path={proto_include}",
-]
-
-
 def compile_all():
+    proto_include = protoc.resources.path("grpc_tools", "_proto")
+    envoy = Path("./envoy")
+    envoy_api = Path("./envoy/api")
+    envoy_api_v2 = Path("./envoy/api/v2")
+    output = Path("../src/envoy_data_plane")
+    proto_args = [
+        __file__,
+        "--proto_path=.",
+        f"--proto_path={envoy}",
+        f"--proto_path={envoy_api}",
+        f"--proto_path={envoy_api_v2}",
+        f"--proto_path={proto_include}",
+    ]
     logger.msg("Running GRPC tools to generate python code from protocol buffers")
     proto_files = [str(file) for file in envoy.glob("**/*") if file.suffix == ".proto"]
     proto_paths = [
@@ -133,4 +145,22 @@ def compile_all():
     protoc.main((*args, *proto_files))
 
 
-compile_all()
+def main():
+    build_directory = Path("BUILD")
+    if not build_directory.exists():
+        logger.msg("Creating BUILD directory")
+        build_directory.mkdir()
+    os.chdir(build_directory)
+
+    for pkg in packages:
+        if not pkg.archive.exists():
+            pkg.download()
+
+        if not pkg.exists:
+            pkg.extract()
+
+    compile_all()
+
+
+if __name__ == "__main__":
+    main()
