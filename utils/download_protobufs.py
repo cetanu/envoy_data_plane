@@ -1,5 +1,6 @@
 import os
 import shutil
+from typing import Optional
 import zipfile
 import requests
 import structlog
@@ -18,28 +19,36 @@ logger = structlog.get_logger()
 class Package:
     url: str
     name: str
-    directory: str
-    namespace: str
+    source_root: str
+    source_subdir: str
+    target_root: str
+    target_subdir: Optional[str] = None
 
     @property
     def archive(self):
-        return Path(f"{self.name}.zip")
+        return Path(f"{self.target_root}.zip")
 
     @property
-    def root(self):
-        return Path(self.directory) / Path(self.namespace)
+    def source_protobufs(self):
+        return Path(self.source_root) / Path(self.source_subdir)
 
     @property
-    def absolute_path(self):
-        return Path(self.name).absolute()
+    def target(self):
+        if self.target_subdir is not None:
+            return Path(self.target_root) / Path(self.target_subdir)
+        return Path(self.target_root)
 
     @property
-    def exists(self) -> bool:
-        ret = Path(self.name).exists()
+    def final_proto_root_absolute(self):
+        return Path(self.target_root).absolute()
+
+    @property
+    def final_proto_root_exists(self) -> bool:
+        ret = Path(self.target_root).exists()
         if ret:
-            logger.msg(f"{self.absolute_path} exists")
+            logger.msg(f"{self.final_proto_root_absolute} exists")
         else:
-            logger.msg(f"{self.absolute_path} does not exist")
+            logger.msg(f"{self.final_proto_root_absolute} does not exist")
         return ret
 
     def download(self):
@@ -58,64 +67,74 @@ class Package:
                 logger.msg(f"Extracting {file}")
                 zipref.extract(member=file, path=".")
 
-        logger.msg(f"Copying {self.root} over the top of {self.name}")
-        shutil.copytree(self.root, self.name)
+        logger.msg(f"Copying {self.source_protobufs} over the top of {self.target}")
+        shutil.copytree(self.source_protobufs, self.target)
 
 
 packages = {
     Package(
         url=f"https://github.com/envoyproxy/envoy/archive/refs/tags/v{ENVOY_VERSION}.zip",
         name="envoy",
-        namespace="envoy",
-        directory=f"envoy-{ENVOY_VERSION}/api",
+        source_root=f"envoy-{ENVOY_VERSION}/api",
+        source_subdir="envoy",
+        target_root="envoy",
     ),
     Package(
         url=f"https://github.com/envoyproxy/envoy/archive/refs/tags/v{ENVOY_VERSION}.zip",
-        name="envoy",
-        namespace=".",
-        directory=f"envoy-{ENVOY_VERSION}/contrib",
+        name="envoy contrib",
+        source_root=f"envoy-{ENVOY_VERSION}/contrib",
+        source_subdir=".",
+        target_root="envoy",
+        target_subdir="contrib",
     ),
     Package(
         url="https://github.com/cncf/xds/archive/refs/heads/main.zip",
         name="xds",
-        namespace=".",
-        directory="xds-main",
+        source_root="xds-main",
+        source_subdir=".",
+        target_root="xds",
     ),
     Package(
         url="https://github.com/googleapis/googleapis/archive/master.zip",
         name="google",
-        namespace="google",
-        directory="googleapis-master",
+        source_root="googleapis-master",
+        source_subdir="google",
+        target_root="google",
     ),
     Package(
         url="https://github.com/cncf/udpa/archive/refs/tags/v0.0.1.zip",
         name="udpa",
-        namespace="udpa",
-        directory="udpa-0.0.1",
+        source_root="udpa-0.0.1",
+        source_subdir="udpa",
+        target_root="udpa",
     ),
     Package(
         url="https://github.com/envoyproxy/protoc-gen-validate/archive/main.zip",
         name="validate",
-        namespace="validate",
-        directory="protoc-gen-validate-main",
+        source_root="protoc-gen-validate-main",
+        source_subdir="validate",
+        target_root="validate",
     ),
     Package(
         url="https://github.com/census-instrumentation/opencensus-proto/archive/refs/tags/v0.2.0.zip",
         name="opencensus",
-        namespace="opencensus",
-        directory="opencensus-proto-0.2.0/src",
+        source_root="opencensus-proto-0.2.0/src",
+        source_subdir="opencensus",
+        target_root="opencensus",
     ),
     Package(
         url="https://github.com/open-telemetry/opentelemetry-proto/archive/refs/tags/v0.9.0.zip",
         name="opentelemetry",
-        namespace="opentelemetry",
-        directory="opentelemetry-proto-0.9.0",
+        source_root="opentelemetry-proto-0.9.0",
+        source_subdir="opentelemetry",
+        target_root="opentelemetry",
     ),
     Package(
         url="https://github.com/prometheus/client_model/archive/refs/heads/master.zip",
         name="prometheus",
-        namespace=".",
-        directory="client_model-master",
+        source_root="client_model-master",
+        source_subdir=".",
+        target_root="prometheus",
     ),
 }
 
@@ -156,7 +175,7 @@ def main():
         if not pkg.archive.exists():
             pkg.download()
 
-        if not pkg.exists:
+        if not pkg.final_proto_root_exists:
             pkg.extract()
 
     compile_all()
