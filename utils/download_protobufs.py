@@ -9,7 +9,7 @@ from copy import deepcopy
 from pathlib import Path
 from grpc_tools import protoc
 
-ENVOY_VERSION = "1.31.0"
+ENVOY_VERSION = "1.32.0"
 
 structlog.configure()
 logger = structlog.get_logger()

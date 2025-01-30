@@ -1,7 +1,6 @@
 dist
 build
 BUILD
-src/envoy_data_plane/**
 *.egg-info
 venv
 **/__pycache__
