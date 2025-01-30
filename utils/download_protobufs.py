@@ -9,7 +9,7 @@ from copy import deepcopy
 from pathlib import Path
 from grpc_tools import protoc
 
-ENVOY_VERSION = "1.32.0"
+ENVOY_VERSION = "1.31.0"
 
 structlog.configure()
 logger = structlog.get_logger()
@@ -43,12 +43,12 @@ class Package:
         return Path(self.target_root).absolute()
 
     @property
-    def final_proto_root_exists(self) -> bool:
-        ret = Path(self.target_root).exists()
+    def target_exists(self) -> bool:
+        ret = self.target.exists()
         if ret:
-            logger.msg(f"{self.final_proto_root_absolute} exists")
+            logger.msg(f"{self.target} exists")
         else:
-            logger.msg(f"{self.final_proto_root_absolute} does not exist")
+            logger.msg(f"{self.target} does not exist")
         return ret
 
     def download(self):
@@ -68,7 +68,7 @@ class Package:
                 zipref.extract(member=file, path=".")
 
         logger.msg(f"Copying {self.source_protobufs} over the top of {self.target}")
-        shutil.copytree(self.source_protobufs, self.target)
+        shutil.copytree(self.source_protobufs, self.target, dirs_exist_ok=True)
 
 
 packages = {
@@ -160,7 +160,7 @@ def compile_all():
     ]
     args = deepcopy(proto_args)
     args += proto_paths
-    args += [f"--python_betterproto_out={output}"]
+    args += [f"--python_betterproto2_out={output}"]
     protoc.main((*args, *proto_files))
 
 
@@ -174,9 +174,7 @@ def main():
     for pkg in packages:
         if not pkg.archive.exists():
             pkg.download()
-
-        if not pkg.final_proto_root_exists:
-            pkg.extract()
+        pkg.extract()
 
     compile_all()
 
