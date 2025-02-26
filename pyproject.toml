@@ -6,8 +6,8 @@ authors = ["Vasili Syrakis <cetanu@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [
-    { include = "envoy_data_plane", from = "src", format = "sdist" }
-    { include = "envoy_data_plane_pb2", from = "src", format = "sdist" }
+    { include = "envoy_data_plane", from = "src", format = "sdist" },
+    { include = "envoy_data_plane_pb2", from = "src", format = "sdist" },
 ]
 
 [tool.poetry.dependencies]
