@@ -162,6 +162,7 @@ def compile_all():
     args += proto_paths
     args += [f"--python_betterproto_out={output}"]
     args += [f"--python_out=pyi_out:{Path('../src/envoy_data_plane_pb2')}"]
+    args += [f"--grpc_python_out={Path('../src/envoy_data_plane_pb2')}"]
     protoc.main((*args, *proto_files))
 
 
