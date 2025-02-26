@@ -2,7 +2,6 @@ import pytest
 from typing import Any, Dict
 import envoy_data_plane.envoy.api.v2 as envoy
 from datetime import timedelta
-from betterproto2.internal_lib.google.protobuf import Any as protobufAny
 
 
 def test_a_cluster_can_be_created():
@@ -39,7 +38,6 @@ def test_a_cluster_can_be_created():
         "perConnectionBufferLimitBytes": 16777216,
         "commonHttpProtocolOptions": {"idleTimeout": "55.000s"},
         "httpProtocolOptions": {"headerKeyFormat": {"properCaseWords": {}}},
-        "outlierDetection": {},
         "circuitBreakers": {"thresholds": [{"maxConnections": 32768}]},
     }
 

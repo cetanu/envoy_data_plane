@@ -1,28 +1,29 @@
 [tool.poetry]
 name = "envoy_data_plane"
-version = "1.0.2"
+version = "1.0.3"
 description = "Python dataclasses for the Envoy Data-Plane-API"
 authors = ["Vasili Syrakis <cetanu@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [
     { include = "envoy_data_plane", from = "src", format = "sdist" }
+    { include = "envoy_data_plane_pb2", from = "src", format = "sdist" }
 ]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-betterproto2 = "0.2.3"
+betterproto = "2.0.0b6"
 grpcio-tools = "^1.67"
-grpcio = "^1"
-grpclib = "^0.4.7"
 
 [tool.poetry.group.dev.dependencies]
 requests = "^2.25.1"
 structlog = "^21.1.0"
 pytest = "^6.2.2"
 pytest-spec = "^3.1.0"
+grpcio = "^1"
+grpcio-tools = "^1.67"
+betterproto = {version = "^2.0.0b6", extras = ["compiler"]}
 protobuf = "^5.28.3"
-betterproto2-compiler = "^0.2.4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
