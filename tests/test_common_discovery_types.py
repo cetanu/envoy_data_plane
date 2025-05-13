@@ -1,7 +1,9 @@
-import pytest
-from typing import Any, Dict
-import envoy_data_plane.envoy.api.v2 as envoy
 from datetime import timedelta
+
+import pytest
+
+import envoy_data_plane.envoy.api.v2 as envoy
+from envoy_data_plane.google.protobuf import Any, StringValue
 
 
 def test_a_cluster_can_be_created():
@@ -33,10 +35,11 @@ def test_a_cluster_can_be_created():
     expected = {
         "name": "TestCluster",
         "type": "STRICT_DNS",
-        "connectTimeout": "5.000s",
+        "connectTimeout": "5s",
         "dnsLookupFamily": "V4_ONLY",
+        "outlierDetection": {},
         "perConnectionBufferLimitBytes": 16777216,
-        "commonHttpProtocolOptions": {"idleTimeout": "55.000s"},
+        "commonHttpProtocolOptions": {"idleTimeout": "55s"},
         "httpProtocolOptions": {"headerKeyFormat": {"properCaseWords": {}}},
         "circuitBreakers": {"thresholds": [{"maxConnections": 32768}]},
     }
@@ -109,13 +112,26 @@ def test_a_route_configuration_can_be_created():
     assert actual.to_dict() == expected
 
 
-@pytest.mark.skip("Any/typed_per_filter_config still broken")
+def test_a_basic_route_can_convert_to_dict():
+    envoy.route.Route(
+        match=envoy.route.RouteMatch(prefix="/"),
+        route=envoy.route.RouteAction(cluster="SomeCluster"),
+    ).to_dict()
+
+def test_a_route_with_typed_per_filter_config_can_convert_to_dict():
+    envoy.route.Route(
+        match=envoy.route.RouteMatch(prefix="/"),
+        route=envoy.route.RouteAction(cluster="SomeCluster"),
+        typed_per_filter_config={"foo": Any(value=b"bar", type_url="type.googleapis.com/google.protobuf.StringValue")},
+    ).to_dict()
+
+
+@pytest.mark.xfail
 def test_route_rules_with_typed_per_filter_config_can_be_encoded_and_decoded():
-    per_filter_config: Dict[str, Any] = {"foo": "bar"}
     actual = envoy.route.Route(
         match=envoy.route.RouteMatch(prefix="/"),
         route=envoy.route.RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config=per_filter_config,
+        typed_per_filter_config={"foo": StringValue(value="bar")},
     )
 
     expected = {
