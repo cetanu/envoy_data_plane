@@ -1,12 +1,14 @@
 import os
 import shutil
-from typing import Optional
 import zipfile
-import requests
-import structlog
-from dataclasses import dataclass
 from copy import deepcopy
 from pathlib import Path
+from typing import Optional
+from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
+
+import requests
+import structlog
 from grpc_tools import protoc
 
 ENVOY_VERSION = "1.34.0"
@@ -69,6 +71,10 @@ class Package:
 
         logger.msg(f"Copying {self.source_protobufs} over the top of {self.target}")
         shutil.copytree(self.source_protobufs, self.target, dirs_exist_ok=True)
+
+    def execute(self):
+        self.download()
+        self.extract()
 
 
 packages = {
@@ -136,6 +142,13 @@ packages = {
         source_subdir=".",
         target_root="prometheus",
     ),
+    Package(
+        url="https://github.com/google/cel-spec/archive/refs/tags/v0.24.0.zip",
+        name="cel",
+        source_root="cel-spec-0.24.0",
+        source_subdir="proto",
+        target_root="cel",
+    ),
 }
 
 
@@ -173,11 +186,12 @@ def main():
         build_directory.mkdir()
     os.chdir(build_directory)
 
-    for pkg in packages:
-        if not pkg.archive.exists():
-            pkg.download()
-        pkg.extract()
-
+    with ThreadPoolExecutor() as executor:
+        for pkg in packages:
+            if not pkg.target_exists:
+                executor.submit(pkg.execute)
+            else:
+                logger.msg(f"{pkg.target} already exists, skipping download")
     compile_all()
 
 
