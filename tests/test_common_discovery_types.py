@@ -1,9 +1,7 @@
 from datetime import timedelta
 
-import pytest
-
 import envoy_data_plane.envoy.api.v2 as envoy
-from envoy_data_plane.google.protobuf import Any, StringValue
+from envoy_data_plane.google.protobuf import StringValue, Any
 
 
 def test_a_cluster_can_be_created():
@@ -119,25 +117,40 @@ def test_a_basic_route_can_convert_to_dict():
     ).to_dict()
 
 def test_a_route_with_typed_per_filter_config_can_convert_to_dict():
-    envoy.route.Route(
+    bar = Any()
+    bar.pack(message=StringValue(value="bar"))
+
+    obj = envoy.route.Route(
         match=envoy.route.RouteMatch(prefix="/"),
         route=envoy.route.RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config={"foo": Any(value=b"bar", type_url="type.googleapis.com/google.protobuf.StringValue")},
+        typed_per_filter_config={"foo": bar},
     ).to_dict()
-
+    print(obj)
+    assert obj
 
 @pytest.mark.xfail
 def test_route_rules_with_typed_per_filter_config_can_be_encoded_and_decoded():
+    bar = Any()
+    bar.pack(message=StringValue(value="bar"))
+
     actual = envoy.route.Route(
         match=envoy.route.RouteMatch(prefix="/"),
         route=envoy.route.RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config={"foo": StringValue(value="bar")},
+        typed_per_filter_config={"foo": bar},
     )
 
     expected = {
         "match": {"prefix": "/"},
         "route": {"cluster": "SomeCluster"},
-        "typedPerFilterConfig": {"foo": "bar"},
+        "typedPerFilterConfig": {
+            "foo": {
+                # FIXME: betterproto2 doesn't like the '@'
+                # says it is a KeyError for 'type'
+                # betterproto2/__init__.py:1069
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "bar"
+            }
+        },
     }
 
     assert actual.to_dict() == expected
