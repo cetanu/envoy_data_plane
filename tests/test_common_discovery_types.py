@@ -1,3 +1,4 @@
+import pytest
 from datetime import timedelta
 
 import envoy_data_plane.envoy.api.v2 as envoy
@@ -116,6 +117,7 @@ def test_a_basic_route_can_convert_to_dict():
         route=envoy.route.RouteAction(cluster="SomeCluster"),
     ).to_dict()
 
+
 def test_a_route_with_typed_per_filter_config_can_convert_to_dict():
     bar = Any()
     bar.pack(message=StringValue(value="bar"))
@@ -127,6 +129,7 @@ def test_a_route_with_typed_per_filter_config_can_convert_to_dict():
     ).to_dict()
     print(obj)
     assert obj
+
 
 @pytest.mark.xfail
 def test_route_rules_with_typed_per_filter_config_can_be_encoded_and_decoded():
@@ -148,7 +151,7 @@ def test_route_rules_with_typed_per_filter_config_can_be_encoded_and_decoded():
                 # says it is a KeyError for 'type'
                 # betterproto2/__init__.py:1069
                 "@type": "type.googleapis.com/google.protobuf.StringValue",
-                "value": "bar"
+                "value": "bar",
             }
         },
     }
