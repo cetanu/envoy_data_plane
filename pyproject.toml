@@ -1,27 +1,35 @@
-[tool.poetry]
+[project]
 name = "envoy_data_plane"
 version = "2.0.0b2"
 description = "Python dataclasses for the Envoy Data-Plane-API"
-authors = ["Vasili Syrakis <cetanu@gmail.com>"]
-license = "MIT"
+authors = [{ name = "Vasili Syrakis", email = "cetanu@gmail.com" }]
+requires-python = ">=3.11, <4"
 readme = "README.md"
-packages = [
-    { include = "envoy_data_plane", from = "src", format = "sdist" },
-    { include = "envoy_data_plane_pb2", from = "src", format = "sdist" },
+license = "MIT"
+dependencies = [
+    "betterproto2[all]>=0.9.0,<0.10"
 ]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-betterproto2 = {version = "^0.9.0", extras = ["all"]}
+[dependency-groups]
+dev = [
+    "betterproto2-compiler>=0.9.0,<0.10",
+    "grpcio-tools>=1.75.1",
+    "requests",
+    "structlog",
+    "vedro",
+]
 
-[tool.poetry.group.dev.dependencies]
-requests = "^2.25.1"
-structlog = "^21.1.0"
-pytest = "^6.2.2"
-pytest-spec = "^3.1.0"
-betterproto2-compiler = "^0.9.0"
-grpcio-tools = "^1.71.0"
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/envoy_data_plane",
+    "src/envoy_data_plane_pb2",
+]
+[tool.hatch.build.targets.wheel]
+packages = [
+    "src/envoy_data_plane",
+    "src/envoy_data_plane_pb2",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"

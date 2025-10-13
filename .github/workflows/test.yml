@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.11, 3.12]
+        python-version: [3.11, 3.12, 3.13, 3.14]
 
     steps:
     - uses: actions/checkout@v2
@@ -20,12 +20,11 @@ jobs:
         sudo apt update
         sudo apt -y install build-essential python3-dev g++ libprotobuf-dev cmake
         python -m pip install --upgrade pip setuptools
-        python -m pip install poetry
-        poetry install --no-root
+        python -m pip install uv
     - name: Compile Protobufs
       run: |
-        poetry run python utils/download_protobufs.py
-        poetry install
-    - name: Test with pytest
+        uv run python build.py
+        uv pip install -e .
+    - name: Unit tests
       run: |
-        poetry run pytest --spec -vvv
+        uv run vedro run tests
