@@ -11,7 +11,7 @@ import requests
 import structlog
 from grpc_tools import protoc
 
-ENVOY_VERSION = "1.34.0"
+ENVOY_VERSION = "1.36.2"
 
 structlog.configure()
 logger = structlog.get_logger()
@@ -158,6 +158,11 @@ def compile_all():
     envoy_api = Path("./envoy/api")
     envoy_api_v2 = Path("./envoy/api/v2")
     output = Path("../src/envoy_data_plane")
+    output_pb2 = Path("../src/envoy_data_plane_pb2")
+    for outdir in [output, output_pb2]:
+        if not outdir.exists():
+            logger.msg(f"Creating output directory ({outdir})")
+            outdir.mkdir(parents=True)
     proto_args = [
         __file__,
         "--proto_path=.",
@@ -174,8 +179,8 @@ def compile_all():
     args = deepcopy(proto_args)
     args += proto_paths
     args += [f"--python_betterproto2_out={output}"]
-    args += [f"--python_out=pyi_out:{Path('../src/envoy_data_plane_pb2')}"]
-    args += [f"--grpc_python_out={Path('../src/envoy_data_plane_pb2')}"]
+    args += [f"--python_out=pyi_out:{output_pb2}"]
+    args += [f"--grpc_python_out={output_pb2}"]
     protoc.main((*args, *proto_files))
 
 
