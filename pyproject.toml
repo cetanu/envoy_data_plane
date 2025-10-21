@@ -14,10 +14,24 @@ dependencies = [
 dev = [
     "betterproto2-compiler>=0.9.0,<0.10",
     "grpcio-tools>=1.75.1",
+    "poethepoet>=0.37.0",
     "requests",
     "structlog",
     "vedro",
 ]
+
+[tool.poe]
+executor.type = "uv"
+
+[tool.poe.tasks]
+gen = "python build.py"
+test = "vedro run tests"
+install = { shell = """
+    rm -rf dist
+    uv build
+    uv pip install --force-reinstall dist/*.whl
+""" }
+
 
 [tool.hatch.build.targets.sdist]
 include = [

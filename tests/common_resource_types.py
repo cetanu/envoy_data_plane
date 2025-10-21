@@ -2,8 +2,7 @@ from vedro import scenario
 from datetime import timedelta
 
 import envoy_data_plane.envoy.api.v2 as envoy
-from betterproto2_compiler.known_types.any import Any
-from betterproto2_compiler.known_types.google_values import StringValue
+from envoy_data_plane.google.protobuf import Any, StringValue
 
 
 @scenario()
@@ -33,7 +32,7 @@ def cluster_can_be_created():
         ),
     )
 
-    expected = {
+    expected = {  # pyright: ignore[reportUnknownVariableType]
         "name": "TestCluster",
         "type": "STRICT_DNS",
         "connectTimeout": "5s",
@@ -117,7 +116,7 @@ def route_configuration_can_be_created():
 
 @scenario()
 def basic_route_can_convert_to_dict():
-    envoy.route.Route(
+    assert envoy.route.Route(
         match=envoy.route.RouteMatch(prefix="/"),
         route=envoy.route.RouteAction(cluster="SomeCluster"),
     ).to_dict()
@@ -128,12 +127,22 @@ def route_rule_with_typed_per_filter_config_can_be_converted_to_dict():
     actual = envoy.route.Route(
         match=envoy.route.RouteMatch(prefix="/"),
         route=envoy.route.RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config={"foo": StringValue(value="bar")},
+        typed_per_filter_config={
+            "foo": Any(
+                value=StringValue(value="bar").SerializeToString(),
+                type_url="type.googleapis.com/google.protobuf.StringValue",
+            )
+        },
     )
     expected = {
         "match": {"prefix": "/"},
         "route": {"cluster": "SomeCluster"},
-        "typedPerFilterConfig": {"foo": "bar"},
+        "typedPerFilterConfig": {
+            "foo": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "bar",
+            }
+        },
     }
     assert actual.to_dict() == expected
 
@@ -143,11 +152,46 @@ def route_rule_with_typed_per_filter_config_can_be_converted_from_dict():
     _input = {
         "match": {"prefix": "/"},
         "route": {"cluster": "SomeCluster"},
-        "typedPerFilterConfig": {"foo": "bar"},
+        "typedPerFilterConfig": {
+            "foo": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "bar",
+            }
+        },
     }
     expected = envoy.route.Route(
         match=envoy.route.RouteMatch(prefix="/"),
         route=envoy.route.RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config={"foo": StringValue(value="bar")},
+        typed_per_filter_config={
+            "foo": Any(
+                value=StringValue(value="bar").SerializeToString(),
+                type_url="type.googleapis.com/google.protobuf.StringValue",
+            )
+        },
     )
     assert envoy.route.Route().from_dict(_input) == expected
+
+
+@scenario()
+def route_rule_with_typed_per_filter_config_can_be_serialized_and_deserialized():
+    _input = envoy.route.Route(
+        match=envoy.route.RouteMatch(prefix="/"),
+        route=envoy.route.RouteAction(cluster="SomeCluster"),
+        typed_per_filter_config={
+            "foo": Any(
+                value=StringValue(value="bar").SerializeToString(),
+                type_url="type.googleapis.com/google.protobuf.StringValue",
+            )
+        },
+    ).SerializeToString()
+    expected = envoy.route.Route(
+        match=envoy.route.RouteMatch(prefix="/"),
+        route=envoy.route.RouteAction(cluster="SomeCluster"),
+        typed_per_filter_config={
+            "foo": Any(
+                value=StringValue(value="bar").SerializeToString(),
+                type_url="type.googleapis.com/google.protobuf.StringValue",
+            )
+        },
+    )
+    assert envoy.route.Route().FromString(_input) == expected
