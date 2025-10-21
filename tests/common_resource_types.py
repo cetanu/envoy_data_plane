@@ -7,7 +7,7 @@ from betterproto2_compiler.known_types.google_values import StringValue
 
 
 @scenario()
-def test_a_cluster_can_be_created():
+def cluster_can_be_created():
     actual = envoy.Cluster(
         name="TestCluster",
         type=envoy.ClusterDiscoveryType.STRICT_DNS,
@@ -49,7 +49,7 @@ def test_a_cluster_can_be_created():
 
 
 @scenario()
-def test_a_listener_can_be_created():
+def listener_can_be_created():
     actual = envoy.Listener(
         name="TestListener",
         address=envoy.core.Address(
@@ -82,7 +82,7 @@ def test_a_listener_can_be_created():
 
 
 @scenario()
-def test_a_route_configuration_can_be_created():
+def route_configuration_can_be_created():
     actual = envoy.RouteConfiguration(
         name="TestRoutes",
         virtual_hosts=[
@@ -116,7 +116,7 @@ def test_a_route_configuration_can_be_created():
 
 
 @scenario()
-def test_a_basic_route_can_convert_to_dict():
+def basic_route_can_convert_to_dict():
     envoy.route.Route(
         match=envoy.route.RouteMatch(prefix="/"),
         route=envoy.route.RouteAction(cluster="SomeCluster"),
@@ -124,30 +124,30 @@ def test_a_basic_route_can_convert_to_dict():
 
 
 @scenario()
-def test_a_route_with_typed_per_filter_config_can_convert_to_dict():
-    route = envoy.route.Route(
-        match=envoy.route.RouteMatch(prefix="/"),
-        route=envoy.route.RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config={"foo": StringValue(value="bar")},
-    )
-    obj = route.to_dict()
-    assert obj["typedPerFilterConfig"]["foo"] == "bar"
-
-
-@scenario()
-def test_route_rules_with_typed_per_filter_config_can_be_encoded_and_decoded():
+def route_rule_with_typed_per_filter_config_can_be_converted_to_dict():
     actual = envoy.route.Route(
         match=envoy.route.RouteMatch(prefix="/"),
         route=envoy.route.RouteAction(cluster="SomeCluster"),
         typed_per_filter_config={"foo": StringValue(value="bar")},
     )
-
     expected = {
         "match": {"prefix": "/"},
         "route": {"cluster": "SomeCluster"},
         "typedPerFilterConfig": {"foo": "bar"},
     }
-
     assert actual.to_dict() == expected
-    # FIXME: can't convert back from dict
-    # assert envoy.route.Route().from_dict(expected) == actual
+
+
+@scenario()
+def route_rule_with_typed_per_filter_config_can_be_converted_from_dict():
+    _input = {
+        "match": {"prefix": "/"},
+        "route": {"cluster": "SomeCluster"},
+        "typedPerFilterConfig": {"foo": "bar"},
+    }
+    expected = envoy.route.Route(
+        match=envoy.route.RouteMatch(prefix="/"),
+        route=envoy.route.RouteAction(cluster="SomeCluster"),
+        typed_per_filter_config={"foo": StringValue(value="bar")},
+    )
+    assert envoy.route.Route().from_dict(_input) == expected
