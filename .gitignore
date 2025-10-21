@@ -6,5 +6,3 @@ venv
 **/__pycache__
 **.pyc
 .vedro
-src/envoy_data_plane/**
-src/envoy_data_plane_pb2/**
