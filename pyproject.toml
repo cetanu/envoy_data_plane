@@ -1,6 +1,6 @@
 [project]
 name = "envoy_data_plane"
-version = "2.0.0b3"
+version = "2.0.0b4"
 description = "Python dataclasses for the Envoy Data-Plane-API"
 authors = [{ name = "Vasili Syrakis", email = "cetanu@gmail.com" }]
 requires-python = ">=3.11, <4"
@@ -12,38 +12,46 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "betterproto2-compiler>=0.9.0,<0.10",
-    "grpcio-tools>=1.75.1",
-    "poethepoet>=0.37.0",
-    "requests",
-    "structlog",
     "vedro",
 ]
 
-[tool.poe]
-executor.type = "uv"
+[build-system]
+build-backend = "hatchling.build"
+requires = [
+    "hatchling",
+    "hatch-build-scripts",
+    "betterproto2-compiler>=0.9.0,<0.10",
+    "grpcio-tools>=1.75.1",
+    "requests",
+    "structlog",
+]
 
-[tool.poe.tasks]
-gen = "python build.py"
-test = "vedro run tests"
-install = { shell = """
-    rm -rf dist
-    uv build
-    uv pip install --force-reinstall dist/*.whl
-""" }
+[[tool.hatch.build.hooks.build-scripts.scripts]]
+commands = [
+    "python build.py"
+]
+artifacts = [
+    "src/**/*.py",
+]
 
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src/envoy_data_plane",
-    "src/envoy_data_plane_pb2",
+    "src/**/*.py",
+    "build.py",
 ]
-[tool.hatch.build.targets.wheel]
-packages = [
-    "src/envoy_data_plane",
-    "src/envoy_data_plane_pb2",
+exclude = [
+    "pyproject.toml",
+    "uv.lock",
+    "/.github",
+    "/scenarios",
+    "/dist",
+    "/BUILD",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+#
+# [tool.hatch.build.targets.wheel]
+# packages = [
+#     "envoy_data_plane",
+#     "envoy_data_plane_pb2",
+# ]
+# sources = ["src"]

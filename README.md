@@ -23,109 +23,13 @@ python -m pip install envoy_data_plane
 
 ## Installing specific XDS revisions
 
-There are branches available with compiled python protobuf files.  
-To install them, you can use the following syntax:
+I used to maintain branches with compiled python protobuf files for each
+version, but I haven't heard from anyone needing them to be updated or anything
+like that, so I've stopped this effort.
 
-```shell script
-pip install git+https://github.com/cetanu/envoy_data_plane@<BRANCH NAME>
-```
+If you need a specific version just call out in the issues, otherwise I will
+keep publishing the latest release to match the current envoy release.
 
-Examples:
+## Examples
 
-```
-pip install git+https://github.com/cetanu/envoy_data_plane@envoy_v1.13.7
-pip install git+https://github.com/cetanu/envoy_data_plane@envoy_v1.16.2
-pip install git+https://github.com/cetanu/envoy_data_plane@envoy_v1.17.2
-pip install git+https://github.com/cetanu/envoy_data_plane@envoy_v1.18.2
-pip install git+https://github.com/cetanu/envoy_data_plane@envoy_v1.19.0
-```
-
-Not all versions may be available. Raise an issue if you need another one added.
-
-## Example
-
-```python
-import stringcase
-import json
-import envoy_data_plane.envoy.api.v2 as envoy
-
-route_config = envoy.RouteConfiguration(
-    name='MyRouteConfig',
-    virtual_hosts=[
-        envoy.route.VirtualHost(
-            name='SomeWebsite',
-            domains=['foobar.com'],
-            routes=[
-                envoy.route.Route(
-                    name='catchall',
-                    match=envoy.route.RouteMatch(
-                        prefix='/'
-                    ),
-                    direct_response=envoy.route.DirectResponseAction(
-                        status=200,
-                        body=envoy.core.DataSource(
-                            inline_string='Hello there'
-                        )
-                    )
-                )
-            ]
-        )
-    ]
-)
-
-response = envoy.DiscoveryResponse(
-    version_info='0',
-    resources=[
-        route_config
-    ],
-)
-
-print(
-    json.dumps(response.to_dict(casing=stringcase.snakecase), indent=2)
-)
-```
-
-Result:
-```
-{
-  "version_info": "0",
-  "resources": [
-    {
-      "name": "MyRouteConfig",
-      "virtual_hosts": [
-        {
-          "name": "SomeWebsite",
-          "domains": [
-            "foobar.com"
-          ],
-          "routes": [
-            {
-              "name": "catchall",
-              "match": {
-                "prefix": "/",
-                "headers": [],
-                "query_parameters": []
-              },
-              "direct_response": {
-                "status": 200,
-                "body": {
-                  "inline_string": "Hello there"
-                }
-              },
-              "request_headers_to_add": [],
-              "response_headers_to_add": []
-            }
-          ],
-          "virtual_clusters": [],
-          "rate_limits": [],
-          "request_headers_to_add": [],
-          "response_headers_to_add": []
-        }
-      ],
-      "response_headers_to_add": [],
-      "request_headers_to_add": []
-    }
-  ]
-}
-
-```
+See the scenarios directory for example usages

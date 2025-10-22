@@ -23,8 +23,7 @@ jobs:
         python -m pip install uv
     - name: Compile Protobufs
       run: |
-        uv run poe gen
-        uv run poe install
+        uv sync
     - name: Unit tests
       run: |
-        uv run poe test
+        uv run vedro

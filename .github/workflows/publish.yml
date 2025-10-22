@@ -21,8 +21,7 @@ jobs:
         python -m pip install uv
     - name: Compile protobufs
       run: |
-        uv run poe gen
-        uv run poe install
+        uv build
     - name: Build and publish
       env:
         PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}

@@ -1,6 +1,6 @@
-from vedro import scenario
 from datetime import timedelta
 
+from vedro import scenario
 import envoy_data_plane.envoy.api.v2 as envoy
 from envoy_data_plane.google.protobuf import Any, StringValue
 
@@ -195,3 +195,58 @@ def route_rule_with_typed_per_filter_config_can_be_serialized_and_deserialized()
         },
     )
     assert envoy.route.Route().FromString(_input) == expected
+
+
+@scenario()
+def old_example_from_readme_works():
+    route_config = envoy.RouteConfiguration(
+        name="MyRouteConfig",
+        virtual_hosts=[
+            envoy.route.VirtualHost(
+                name="SomeWebsite",
+                domains=["foobar.com"],
+                routes=[
+                    envoy.route.Route(
+                        name="catchall",
+                        match=envoy.route.RouteMatch(prefix="/"),
+                        direct_response=envoy.route.DirectResponseAction(
+                            status=200,
+                            body=envoy.core.DataSource(inline_string="Hello there"),
+                        ),
+                    )
+                ],
+            )
+        ],
+    )
+    response = envoy.DiscoveryResponse(
+        version_info="0",
+        resources=[route_config],
+    )
+    actual = response.to_dict()
+    expected = {
+        "versionInfo": "0",
+        "resources": [
+            {
+                "name": "MyRouteConfig",
+                "virtualHosts": [
+                    {
+                        "name": "SomeWebsite",
+                        "domains": ["foobar.com"],
+                        "routes": [
+                            {
+                                "name": "catchall",
+                                "match": {
+                                    "prefix": "/",
+                                },
+                                "directResponse": {
+                                    "status": 200,
+                                    "body": {"inlineString": "Hello there"},
+                                },
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    assert expected == actual
