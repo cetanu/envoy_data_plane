@@ -183,6 +183,7 @@ def compile_all():
     args += [f"--grpc_python_out={output_pb2}"]
     args += ["--python_betterproto2_opt=client_generation=sync_async_no_default"]
     args += ["--python_betterproto2_opt=server_generation=async"]
+    args += ["--python_betterproto2_opt=pydantic_dataclasses"]
     protoc.main((*args, *proto_files))
 
 
