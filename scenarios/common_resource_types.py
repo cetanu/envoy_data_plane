@@ -1,32 +1,65 @@
 from datetime import timedelta
 
 from vedro import scenario
-import envoy_data_plane.envoy.api.v2 as envoy
+
+from envoy_data_plane.envoy.service.discovery.v3 import DiscoveryResponse
+from envoy_data_plane.envoy.config.core.v3 import (
+    Address,
+    DataSource,
+    Http1ProtocolOptions,
+    Http1ProtocolOptionsHeaderKeyFormat,
+    Http1ProtocolOptionsHeaderKeyFormatProperCaseWords,
+    HttpProtocolOptions,
+    RoutingPriority,
+    SocketAddress,
+    SocketAddressProtocol,
+)
+from envoy_data_plane.envoy.config.listener.v3 import (
+    Listener,
+    Filter,
+    FilterChain,
+)
+from envoy_data_plane.envoy.config.cluster.v3 import (
+    Cluster,
+    ClusterDiscoveryType,
+    ClusterDnsLookupFamily,
+    OutlierDetection,
+    CircuitBreakers,
+    CircuitBreakersThresholds,
+)
+from envoy_data_plane.envoy.config.route.v3 import (
+    RouteAction,
+    RouteConfiguration,
+    VirtualHost,
+    Route,
+    RouteMatch,
+    DirectResponseAction,
+)
 from envoy_data_plane.google.protobuf import Any, StringValue
 
 
 @scenario()
 def cluster_can_be_created():
-    actual = envoy.Cluster(
+    actual = Cluster(
         name="TestCluster",
-        type=envoy.ClusterDiscoveryType.STRICT_DNS,
+        type=ClusterDiscoveryType.STRICT_DNS,
         connect_timeout=timedelta(seconds=5),
         per_connection_buffer_limit_bytes=16777216,
-        common_http_protocol_options=envoy.core.HttpProtocolOptions(
+        common_http_protocol_options=HttpProtocolOptions(
             idle_timeout=timedelta(seconds=55)
         ),
-        dns_lookup_family=envoy.ClusterDnsLookupFamily.V4_ONLY,
+        dns_lookup_family=ClusterDnsLookupFamily.V4_ONLY,
         respect_dns_ttl=False,
-        http_protocol_options=envoy.core.Http1ProtocolOptions(
-            header_key_format=envoy.core.Http1ProtocolOptionsHeaderKeyFormat(
-                proper_case_words=envoy.core.Http1ProtocolOptionsHeaderKeyFormatProperCaseWords()
+        http_protocol_options=Http1ProtocolOptions(
+            header_key_format=Http1ProtocolOptionsHeaderKeyFormat(
+                proper_case_words=Http1ProtocolOptionsHeaderKeyFormatProperCaseWords()
             )
         ),
-        outlier_detection=envoy.cluster.OutlierDetection(),
-        circuit_breakers=envoy.cluster.CircuitBreakers(
+        outlier_detection=OutlierDetection(),
+        circuit_breakers=CircuitBreakers(
             thresholds=[
-                envoy.cluster.CircuitBreakersThresholds(
-                    priority=envoy.core.RoutingPriority.DEFAULT, max_connections=32768
+                CircuitBreakersThresholds(
+                    priority=RoutingPriority.DEFAULT, max_connections=32768
                 )
             ]
         ),
@@ -49,19 +82,19 @@ def cluster_can_be_created():
 
 @scenario()
 def listener_can_be_created():
-    actual = envoy.Listener(
+    actual = Listener(
         name="TestListener",
-        address=envoy.core.Address(
-            socket_address=envoy.core.SocketAddress(
-                protocol=envoy.core.SocketAddressProtocol.TCP,
+        address=Address(
+            socket_address=SocketAddress(
+                protocol=SocketAddressProtocol.TCP,
                 address="0.0.0.0",
                 port_value=8080,
             )
         ),
         filter_chains=[
-            envoy.listener.FilterChain(
+            FilterChain(
                 name="TestFilterChain",
-                filters=[envoy.listener.Filter(name="envoy.http_connection_manager")],
+                filters=[Filter(name="envoy.http_connection_manager")],
             )
         ],
     )
@@ -82,16 +115,16 @@ def listener_can_be_created():
 
 @scenario()
 def route_configuration_can_be_created():
-    actual = envoy.RouteConfiguration(
+    actual = RouteConfiguration(
         name="TestRoutes",
         virtual_hosts=[
-            envoy.route.VirtualHost(
+            VirtualHost(
                 name="TestVirtualHost",
                 domains=["test.com"],
                 routes=[
-                    envoy.route.Route(
-                        match=envoy.route.RouteMatch(prefix="/"),
-                        route=envoy.route.RouteAction(cluster="SomeCluster"),
+                    Route(
+                        match=RouteMatch(prefix="/"),
+                        route=RouteAction(cluster="SomeCluster"),
                     )
                 ],
             )
@@ -116,17 +149,17 @@ def route_configuration_can_be_created():
 
 @scenario()
 def basic_route_can_convert_to_dict():
-    assert envoy.route.Route(
-        match=envoy.route.RouteMatch(prefix="/"),
-        route=envoy.route.RouteAction(cluster="SomeCluster"),
+    assert Route(
+        match=RouteMatch(prefix="/"),
+        route=RouteAction(cluster="SomeCluster"),
     ).to_dict()
 
 
 @scenario()
 def route_rule_with_typed_per_filter_config_can_be_converted_to_dict():
-    actual = envoy.route.Route(
-        match=envoy.route.RouteMatch(prefix="/"),
-        route=envoy.route.RouteAction(cluster="SomeCluster"),
+    actual = Route(
+        match=RouteMatch(prefix="/"),
+        route=RouteAction(cluster="SomeCluster"),
         typed_per_filter_config={
             "foo": Any(
                 value=StringValue(value="bar").SerializeToString(),
@@ -159,9 +192,9 @@ def route_rule_with_typed_per_filter_config_can_be_converted_from_dict():
             }
         },
     }
-    expected = envoy.route.Route(
-        match=envoy.route.RouteMatch(prefix="/"),
-        route=envoy.route.RouteAction(cluster="SomeCluster"),
+    expected = Route(
+        match=RouteMatch(prefix="/"),
+        route=RouteAction(cluster="SomeCluster"),
         typed_per_filter_config={
             "foo": Any(
                 value=StringValue(value="bar").SerializeToString(),
@@ -169,14 +202,14 @@ def route_rule_with_typed_per_filter_config_can_be_converted_from_dict():
             )
         },
     )
-    assert envoy.route.Route().from_dict(_input) == expected
+    assert Route().from_dict(_input) == expected
 
 
 @scenario()
 def route_rule_with_typed_per_filter_config_can_be_serialized_and_deserialized():
-    _input = envoy.route.Route(
-        match=envoy.route.RouteMatch(prefix="/"),
-        route=envoy.route.RouteAction(cluster="SomeCluster"),
+    _input = Route(
+        match=RouteMatch(prefix="/"),
+        route=RouteAction(cluster="SomeCluster"),
         typed_per_filter_config={
             "foo": Any(
                 value=StringValue(value="bar").SerializeToString(),
@@ -184,9 +217,9 @@ def route_rule_with_typed_per_filter_config_can_be_serialized_and_deserialized()
             )
         },
     ).SerializeToString()
-    expected = envoy.route.Route(
-        match=envoy.route.RouteMatch(prefix="/"),
-        route=envoy.route.RouteAction(cluster="SomeCluster"),
+    expected = Route(
+        match=RouteMatch(prefix="/"),
+        route=RouteAction(cluster="SomeCluster"),
         typed_per_filter_config={
             "foo": Any(
                 value=StringValue(value="bar").SerializeToString(),
@@ -194,39 +227,45 @@ def route_rule_with_typed_per_filter_config_can_be_serialized_and_deserialized()
             )
         },
     )
-    assert envoy.route.Route().FromString(_input) == expected
+    assert Route().FromString(_input) == expected
 
 
 @scenario()
 def old_example_from_readme_works():
-    route_config = envoy.RouteConfiguration(
+    route_config = RouteConfiguration(
         name="MyRouteConfig",
         virtual_hosts=[
-            envoy.route.VirtualHost(
+            VirtualHost(
                 name="SomeWebsite",
                 domains=["foobar.com"],
                 routes=[
-                    envoy.route.Route(
+                    Route(
                         name="catchall",
-                        match=envoy.route.RouteMatch(prefix="/"),
-                        direct_response=envoy.route.DirectResponseAction(
+                        match=RouteMatch(prefix="/"),
+                        direct_response=DirectResponseAction(
                             status=200,
-                            body=envoy.core.DataSource(inline_string="Hello there"),
+                            body=DataSource(inline_string="Hello there"),
                         ),
                     )
                 ],
             )
         ],
     )
-    response = envoy.DiscoveryResponse(
+    response = DiscoveryResponse(
         version_info="0",
-        resources=[route_config],
+        resources=[
+            Any(
+                value=route_config.SerializeToString(),
+                type_url="type.googleapis.com/envoy.config.route.v3.RouteConfiguration",
+            )
+        ],
     )
     actual = response.to_dict()
     expected = {
         "versionInfo": "0",
         "resources": [
             {
+                "@type": "type.googleapis.com/envoy.config.route.v3.RouteConfiguration",
                 "name": "MyRouteConfig",
                 "virtualHosts": [
                     {
