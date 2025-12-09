@@ -40,7 +40,7 @@ from envoy_data_plane.google.protobuf import Any, StringValue
 from envoy_data_plane.envoy.extensions.access_loggers.stream.v3 import StdoutAccessLog
 from envoy_data_plane.envoy.config.core.v3 import SubstitutionFormatString
 
-from envoy_data_plane.utils import to_struct, to_value
+from envoy_data_plane.helpers import to_struct, to_value
 
 
 @scenario()

@@ -6,6 +6,7 @@ from envoy_data_plane.google.protobuf import ListValue, Struct, Value
 AcceptedTypes = (
     str
     | int
+    | float
     | bool
     | t.Sequence["AcceptedTypes"]
     | t.MutableMapping[str, "AcceptedTypes"]
@@ -13,7 +14,7 @@ AcceptedTypes = (
 )
 
 
-def dict_to_struct(d: dict[str, AcceptedTypes]) -> Struct:
+def to_struct(d: dict[str, AcceptedTypes]) -> Struct:
     return Struct(fields={k: to_value(v) for k, v in d.items()})
 
 
@@ -22,7 +23,7 @@ def to_value(o: AcceptedTypes) -> Value:
         return Value(bool_value=o)
     elif isinstance(o, str):
         return Value(string_value=o)
-    elif isinstance(o, int):
+    elif isinstance(o, int) or isinstance(o, float):
         return Value(number_value=o)
     elif isinstance(o, type(None)):
         return Value(null_value=None)

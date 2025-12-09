@@ -188,6 +188,10 @@ def compile_all():
 
 
 def main():
+    original_dir = Path.cwd()
+    helpers_src = (original_dir / "helpers.py").read_text()
+    helpers_out = original_dir / "src" / "envoy_data_plane" / "helpers.py"
+
     build_directory = Path("BUILD")
     if not build_directory.exists():
         logger.msg("Creating BUILD directory")
@@ -200,11 +204,12 @@ def main():
                 executor.submit(pkg.execute)
             else:
                 logger.msg(f"{pkg.target} already exists, skipping download")
+
     compile_all()
 
-    # move utils file into source dir
-    utils_src = Path("src/helpers.py").read_text()
-    _ = Path("src/envoy_data_plane/helpers.py").write_text(utils_src)
+    # Create helpers file in the library
+    helpers_out.touch(exist_ok=True)
+    _ = helpers_out.write_text(helpers_src)
 
 
 if __name__ == "__main__":
