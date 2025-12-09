@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from vedro import scenario
 
+from envoy_data_plane.envoy.config.core.v3 import Metadata
 from envoy_data_plane.envoy.service.discovery.v3 import DiscoveryResponse
 from envoy_data_plane.envoy.config.core.v3 import (
     Address,
@@ -36,6 +37,10 @@ from envoy_data_plane.envoy.config.route.v3 import (
     DirectResponseAction,
 )
 from envoy_data_plane.google.protobuf import Any, StringValue
+from envoy_data_plane.envoy.extensions.access_loggers.stream.v3 import StdoutAccessLog
+from envoy_data_plane.envoy.config.core.v3 import SubstitutionFormatString
+
+from envoy_data_plane.utils import to_struct, to_value
 
 
 @scenario()
@@ -160,19 +165,14 @@ def route_rule_with_typed_per_filter_config_can_be_converted_to_dict():
     actual = Route(
         match=RouteMatch(prefix="/"),
         route=RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config={
-            "foo": Any(
-                value=StringValue(value="bar").SerializeToString(),
-                type_url="type.googleapis.com/google.protobuf.StringValue",
-            )
-        },
+        typed_per_filter_config={"foo": Any.pack(to_value("bar"))},
     )
     expected = {
         "match": {"prefix": "/"},
         "route": {"cluster": "SomeCluster"},
         "typedPerFilterConfig": {
             "foo": {
-                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "@type": "type.googleapis.com/google.protobuf.Value",
                 "value": "bar",
             }
         },
@@ -195,12 +195,7 @@ def route_rule_with_typed_per_filter_config_can_be_converted_from_dict():
     expected = Route(
         match=RouteMatch(prefix="/"),
         route=RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config={
-            "foo": Any(
-                value=StringValue(value="bar").SerializeToString(),
-                type_url="type.googleapis.com/google.protobuf.StringValue",
-            )
-        },
+        typed_per_filter_config={"foo": Any.pack(StringValue(value="bar"))},
     )
     assert Route().from_dict(_input) == expected
 
@@ -253,12 +248,7 @@ def old_example_from_readme_works():
     )
     response = DiscoveryResponse(
         version_info="0",
-        resources=[
-            Any(
-                value=route_config.SerializeToString(),
-                type_url="type.googleapis.com/envoy.config.route.v3.RouteConfiguration",
-            )
-        ],
+        resources=[Any.pack(route_config)],
     )
     actual = response.to_dict()
     expected = {
@@ -289,3 +279,67 @@ def old_example_from_readme_works():
         ],
     }
     assert expected == actual
+
+
+@scenario()
+def access_logger_example_with_nested_typed_config():
+    actual = Any.pack(
+        StdoutAccessLog(
+            log_format=SubstitutionFormatString(
+                json_format=to_struct(
+                    {
+                        **{
+                            "cluster": "%UPSTREAM_CLUSTER%",
+                            "host": "%UPSTREAM_HOST_NAME%",
+                        },
+                        **{  # overwrite
+                            "cluster": "%UPSTREAM_CLUSTER_RAW%",
+                            "route": "%ROUTE_NAME%",
+                        },
+                    }
+                )
+            ),
+        )
+    )
+    expected = {
+        "@type": "type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog",
+        "logFormat": {
+            "jsonFormat": {
+                "cluster": "%UPSTREAM_CLUSTER_RAW%",
+                "host": "%UPSTREAM_HOST_NAME%",
+                "route": "%ROUTE_NAME%",
+            }
+        },
+    }
+
+    assert actual.to_dict() == expected
+
+
+@scenario()
+def metadata_example_with_struct_untyped():
+    actual = Any.pack(
+        Metadata(
+            filter_metadata={
+                "foo": to_struct(
+                    {
+                        "string": "baz",
+                        "bool": True,
+                        "num": 123.0,
+                        "nested_struct": {"nest": "value"},
+                    }
+                )
+            }
+        )
+    )
+    expected = {
+        "filterMetadata": {
+            "foo": {
+                "string": "baz",
+                "bool": True,
+                "num": 123.0,
+                "nested_struct": {"nest": "value"},
+            }
+        },
+        "@type": "type.googleapis.com/envoy.config.core.v3.Metadata",
+    }
+    assert actual.to_dict() == expected

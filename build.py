@@ -202,6 +202,10 @@ def main():
                 logger.msg(f"{pkg.target} already exists, skipping download")
     compile_all()
 
+    # move utils file into source dir
+    utils_src = Path("src/helpers.py").read_text()
+    _ = Path("src/envoy_data_plane/helpers.py").write_text(utils_src)
+
 
 if __name__ == "__main__":
     main()
