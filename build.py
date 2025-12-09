@@ -189,8 +189,9 @@ def compile_all():
 
 def main():
     original_dir = Path.cwd()
-    helpers_src = (original_dir / "helpers.py").read_text()
     helpers_out = original_dir / "src" / "envoy_data_plane" / "helpers.py"
+    helpers_file = original_dir / "helpers.py"
+    helpers = helpers_file.read_text()
 
     build_directory = Path("BUILD")
     if not build_directory.exists():
@@ -208,8 +209,8 @@ def main():
     compile_all()
 
     # Create helpers file in the library
-    helpers_out.touch(exist_ok=True)
-    _ = helpers_out.write_text(helpers_src)
+    helpers_out.touch()
+    _ = helpers_out.write_text(helpers)
 
 
 if __name__ == "__main__":

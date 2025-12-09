@@ -46,7 +46,7 @@ wheels = [
 
 [[package]]
 name = "envoy-data-plane"
-version = "2.0.0b7"
+version = "2.0.0b8"
 source = { editable = "." }
 dependencies = [
     { name = "betterproto2", extra = ["all"] },
