@@ -8,7 +8,6 @@ jobs:
     strategy:
       matrix:
         python-version: [3.11, 3.12, 3.13, 3.14]
-
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -23,7 +22,7 @@ jobs:
         python -m pip install uv
     - name: Compile Protobufs
       run: |
-        uv sync
+        uv build
     - name: Unit tests
       run: |
         uv run vedro
