@@ -23,6 +23,9 @@ jobs:
     - name: Compile Protobufs
       run: |
         uv build
+    - name: Install the package
+      run: |
+        uv sync
     - name: Unit tests
       run: |
         uv run vedro
