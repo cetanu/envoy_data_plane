@@ -36,11 +36,9 @@ from envoy_data_plane.envoy.config.route.v3 import (
     RouteMatch,
     DirectResponseAction,
 )
-from envoy_data_plane.google.protobuf import Any, StringValue
+from envoy_data_plane.google.protobuf import Any, Struct, Value
 from envoy_data_plane.envoy.extensions.access_loggers.stream.v3 import StdoutAccessLog
 from envoy_data_plane.envoy.config.core.v3 import SubstitutionFormatString
-
-from envoy_data_plane.helpers import to_struct, to_value
 
 
 @scenario()
@@ -165,7 +163,7 @@ def route_rule_with_typed_per_filter_config_can_be_converted_to_dict():
     actual = Route(
         match=RouteMatch(prefix="/"),
         route=RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config={"foo": Any.pack(to_value("bar"))},
+        typed_per_filter_config={"foo": Any.pack(Value.from_dict("bar"))},
     )
     expected = {
         "match": {"prefix": "/"},
@@ -187,7 +185,7 @@ def route_rule_with_typed_per_filter_config_can_be_converted_from_dict():
         "route": {"cluster": "SomeCluster"},
         "typedPerFilterConfig": {
             "foo": {
-                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "@type": "type.googleapis.com/google.protobuf.Value",
                 "value": "bar",
             }
         },
@@ -195,7 +193,7 @@ def route_rule_with_typed_per_filter_config_can_be_converted_from_dict():
     expected = Route(
         match=RouteMatch(prefix="/"),
         route=RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config={"foo": Any.pack(StringValue(value="bar"))},
+        typed_per_filter_config={"foo": Any.pack(Value.from_dict("bar"))},
     )
     assert Route().from_dict(_input) == expected
 
@@ -205,22 +203,12 @@ def route_rule_with_typed_per_filter_config_can_be_serialized_and_deserialized()
     _input = Route(
         match=RouteMatch(prefix="/"),
         route=RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config={
-            "foo": Any(
-                value=StringValue(value="bar").SerializeToString(),
-                type_url="type.googleapis.com/google.protobuf.StringValue",
-            )
-        },
+        typed_per_filter_config={"foo": Any.pack(Value.from_dict("bar"))},
     ).SerializeToString()
     expected = Route(
         match=RouteMatch(prefix="/"),
         route=RouteAction(cluster="SomeCluster"),
-        typed_per_filter_config={
-            "foo": Any(
-                value=StringValue(value="bar").SerializeToString(),
-                type_url="type.googleapis.com/google.protobuf.StringValue",
-            )
-        },
+        typed_per_filter_config={"foo": Any.pack(Value.from_dict("bar"))},
     )
     assert Route().FromString(_input) == expected
 
@@ -286,7 +274,7 @@ def access_logger_example_with_nested_typed_config():
     actual = Any.pack(
         StdoutAccessLog(
             log_format=SubstitutionFormatString(
-                json_format=to_struct(
+                json_format=Struct.from_dict(
                     {
                         **{
                             "cluster": "%UPSTREAM_CLUSTER%",
@@ -320,7 +308,7 @@ def metadata_example_with_struct_untyped():
     actual = Any.pack(
         Metadata(
             filter_metadata={
-                "foo": to_struct(
+                "foo": Struct.from_dict(
                     {
                         "string": "baz",
                         "bool": True,

@@ -39,7 +39,6 @@ artifacts = [
 include = [
     "src/**/*.py",
     "build.py",
-    "helpers.py",
 ]
 exclude = [
     "pyproject.toml",
