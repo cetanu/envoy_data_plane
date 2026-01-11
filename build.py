@@ -3,7 +3,6 @@ import shutil
 import zipfile
 from copy import deepcopy
 from pathlib import Path
-from typing import Optional
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
 
@@ -24,7 +23,7 @@ class Package:
     source_root: str
     source_subdir: str
     target_root: str
-    target_subdir: Optional[str] = None
+    target_subdir: str | None = None
 
     @property
     def archive(self):
