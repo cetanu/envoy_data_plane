@@ -1,6 +1,5 @@
 import vedro
 import random
-from typing import override
 from collections.abc import AsyncIterator
 from grpclib.server import Server
 from grpclib.client import Channel
@@ -20,7 +19,6 @@ PORT = random.randint(10000, 65535)
 
 
 class ClusterDiscoveryService(ClusterDiscoveryServiceBase):
-    @override
     async def stream_clusters(
         self, messages: AsyncIterator[DiscoveryRequest]
     ) -> AsyncIterator[DiscoveryResponse]:
