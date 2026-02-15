@@ -1,16 +1,16 @@
 import os
 import shutil
 import zipfile
-from copy import deepcopy
-from pathlib import Path
-from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
+from dataclasses import dataclass
+from pathlib import Path
 
 import requests
 import structlog
 from grpc_tools import protoc
 
-ENVOY_VERSION = "1.36.2"
+ENVOY_VERSION = "1.37.0"
 
 structlog.configure()
 logger = structlog.get_logger()
