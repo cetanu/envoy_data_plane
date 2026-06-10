@@ -10,7 +10,7 @@ import requests
 import structlog
 from grpc_tools import protoc
 
-ENVOY_VERSION = "1.37.0"
+ENVOY_VERSION = "1.38.0"
 
 structlog.configure()
 logger = structlog.get_logger()
